@@ -2,9 +2,210 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid 23b23725-f42e-4e44-9db5-2c9059cb0f3d)
+	(uuid "23b23725-f42e-4e44-9db5-2c9059cb0f3d")
 	(paper "A4")
+	(title_block
+		(date "2026-10-06")
+		(rev "A0001")
+		(company "azalea68k")
+		(comment 1 "revision format: Axxxx")
+	)
 	(lib_symbols)
+	(sheet
+		(at 143.51 127)
+		(size 12.7 3.81)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "0ef4c5f8-4c78-49e7-ae0f-7334d3af9a7e")
+		(property "Sheetname" "GLUE Logic"
+			(at 143.51 126.2884 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "glue.kicad_sch"
+			(at 143.51 131.3946 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(property "Field2" ""
+			(at 143.51 127 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(instances
+			(project "az030"
+				(path "/23b23725-f42e-4e44-9db5-2c9059cb0f3d"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 101.6 88.9)
+		(size 12.7 3.81)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "96549751-6a8b-4e78-ae8e-f3a61efd15ce")
+		(property "Sheetname" "Peripheral Management"
+			(at 101.6 88.1884 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "perMan.kicad_sch"
+			(at 101.6 93.2946 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "az030"
+				(path "/23b23725-f42e-4e44-9db5-2c9059cb0f3d"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 132.08 96.52)
+		(size 12.7 3.81)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "d4625fa3-dde9-4bfa-92c4-31e1384a32e2")
+		(property "Sheetname" "SCSI"
+			(at 132.08 95.8084 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "scsi.kicad_sch"
+			(at 132.08 100.9146 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "az030"
+				(path "/23b23725-f42e-4e44-9db5-2c9059cb0f3d"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 69.85 110.49)
+		(size 12.7 3.81)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "e78809db-6c82-43fd-9c8a-81deecc87863")
+		(property "Sheetname" "CPU"
+			(at 69.85 109.7784 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "cpu.kicad_sch"
+			(at 69.85 114.8846 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "az030"
+				(path "/23b23725-f42e-4e44-9db5-2c9059cb0f3d"
+					(page "3")
+				)
+			)
+		)
+	)
 	(sheet_instances
 		(path "/"
 			(page "1")
