@@ -5,7 +5,7 @@
 	(uuid "23b23725-f42e-4e44-9db5-2c9059cb0f3d")
 	(paper "A4")
 	(title_block
-		(date "2026-10-06")
+		(date "2026-10-07")
 		(rev "A0001")
 		(company "azalea68k")
 		(comment 1 "revision format: Axxxx")
@@ -64,6 +64,52 @@
 			(project "az030"
 				(path "/23b23725-f42e-4e44-9db5-2c9059cb0f3d"
 					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 124.46 110.49)
+		(size 12.7 3.81)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "11ed6408-3c80-4c02-8148-ed5819e067c3")
+		(property "Sheetname" "Misc"
+			(at 124.46 109.7784 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "misc.kicad_sch"
+			(at 124.46 114.8846 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "az030"
+				(path "/23b23725-f42e-4e44-9db5-2c9059cb0f3d"
+					(page "7")
 				)
 			)
 		)
@@ -222,7 +268,7 @@
 			(color 0 0 0 0)
 		)
 		(uuid "ec9d1964-bd87-4fd5-892e-5539dcd916c9")
-		(property "Sheetname" "Power Regulation"
+		(property "Sheetname" "Power"
 			(at 63.5 65.3284 0)
 			(show_name no)
 			(do_not_autoplace no)

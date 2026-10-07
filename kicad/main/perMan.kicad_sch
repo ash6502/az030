@@ -5,7 +5,8 @@
 	(uuid "9834e100-ae4f-40e5-9a55-b88246c895c4")
 	(paper "A3")
 	(title_block
-		(date "2026-10-06")
+		(title "Peripheral Management")
+		(date "2026-10-07")
 		(rev "A0001")
 		(company "azalea68k")
 		(comment 1 "revision format: Axxxx")
