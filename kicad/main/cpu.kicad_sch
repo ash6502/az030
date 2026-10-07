@@ -3609,6 +3609,16 @@
 	)
 	(wire
 		(pts
+			(xy 101.6 111.76) (xy 107.95 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "12632507-5e8a-45b5-a7f2-315e280918c5")
+	)
+	(wire
+		(pts
 			(xy 137.16 71.12) (xy 139.7 71.12)
 		)
 		(stroke
@@ -5086,6 +5096,16 @@
 			(justify left bottom)
 		)
 		(uuid "dce1fcf0-4f4e-4fcf-9700-4429eaa0db1a")
+	)
+	(label "R~{W}"
+		(at 101.6 111.76 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "e3cdfddd-ef38-42d7-a797-48807d257762")
 	)
 	(label "A8"
 		(at 104.14 144.78 180)

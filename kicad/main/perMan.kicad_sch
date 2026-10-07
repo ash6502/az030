@@ -1118,6 +1118,16 @@
 	)
 	(wire
 		(pts
+			(xy 87.63 137.16) (xy 92.71 137.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a7df7061-e267-4c7f-b06b-11374c2d9e54")
+	)
+	(wire
+		(pts
 			(xy 161.29 168.91) (xy 161.29 175.26)
 		)
 		(stroke
@@ -1125,6 +1135,36 @@
 			(type default)
 		)
 		(uuid "cb4fe4fd-5ee5-4c50-9724-78a157e2dd91")
+	)
+	(wire
+		(pts
+			(xy 143.51 135.89) (xy 151.13 135.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f9e8c195-0302-46db-b6d4-4ee7dadccd19")
+	)
+	(label "R~{W}"
+		(at 143.51 135.89 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "78d20387-0875-4385-a103-6f081689bfdc")
+	)
+	(label "R~{W}"
+		(at 87.63 137.16 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "ce2f6628-ca9f-466f-95c7-eb81c1628ea7")
 	)
 	(symbol
 		(lib_id "power:+5V")

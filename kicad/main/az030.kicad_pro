@@ -661,7 +661,7 @@
         "uuid": "23b23725-f42e-4e44-9db5-2c9059cb0f3d"
       }
     ],
-    "used_designators": "U1-4,Y1,F1,D1,#PWR1-10,J1",
+    "used_designators": "U1-4,Y1,F1,D1-2,#PWR1-10,J1",
     "variants": []
   },
   "sheets": [
@@ -684,6 +684,10 @@
     [
       "96549751-6a8b-4e78-ae8e-f3a61efd15ce",
       "Peripheral Management"
+    ],
+    [
+      "ec9d1964-bd87-4fd5-892e-5539dcd916c9",
+      "Power Regulation"
     ]
   ],
   "text_variables": {},
