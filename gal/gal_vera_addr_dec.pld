@@ -1,0 +1,18 @@
+Name     VIDEO_DEC;
+/* Inputs */
+PIN 2  = A31;  PIN 3  = A30;  PIN 4  = A29;  PIN 5  = A28;
+PIN 6  = A27;  PIN 7  = A26;  PIN 8  = A25;  PIN 9  = A24;
+PIN 10 = A23;  PIN 11 = A22;  PIN 13 = A21;  PIN 14 = A20;
+PIN 15 = A15;  PIN 16 = A14;  PIN 17 = A13;  PIN 18 = A12;
+PIN 19 = !AS;                      /* true when pin is low */
+/* Outputs (active low) */
+PIN 20 = !CS_UART;   PIN 21 = !CS_SYS;
+PIN 22 = !CS_SCSI;   PIN 23 = !CS_VIDEO;
+
+IO_PAGE = A31&A30&A29&A28&A27&A26&A25 & !A24&!A23&!A22&!A21&!A20; /* 0xFE0x_xxxx */
+SEL     = IO_PAGE & AS;
+
+CS_UART  = SEL & !A15&!A14&!A13&!A12;   /* 0xFE00_0xxx */
+CS_SYS   = SEL & !A15&!A14&!A13& A12;   /* 0xFE00_1xxx */
+CS_SCSI  = SEL & !A15&!A14& A13&!A12;   /* 0xFE00_2xxx */
+CS_VIDEO = SEL & !A15&!A14& A13& A12;   /* 0xFE00_3xxx */

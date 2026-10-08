@@ -1,0 +1,19 @@
+Name     VERA_BRIDGE;
+PIN 1  = CLK;
+PIN 2  = !CS_VIDEO;  PIN 3 = !DS;  PIN 4 = RW;  PIN 5 = !RESET;
+PIN 14 = !VERA_CS;   PIN 15 = !VERA_RD;  PIN 16 = !VERA_WR;
+PIN 17 = !DSACK0;    PIN 18 = DSACK1;
+PIN 19 = W1;  PIN 20 = W2;  PIN 21 = W3;
+
+SEL    = CS_VIDEO;
+
+W1.d   = SEL & !RESET;
+W2.d   = SEL & W1;
+W3.d   = SEL & W2;
+
+VERA_CS = SEL;
+VERA_RD = SEL & W1 & DS &  RW;          /* read: held until end of cycle */
+VERA_WR = SEL & W1 & DS & !RW & !W3;    /* write: ends BEFORE DSACK so data is still valid */
+
+DSACK0    = W3;      DSACK0.oe = SEL;   /* low (asserted) when W3 */
+DSACK1    = 'b'0;    DSACK1.oe = SEL;   /* held inactive (high) = 8-bit port */
