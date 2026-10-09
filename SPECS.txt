@@ -1,0 +1,19 @@
+CPU: Motorola 68030 @ 16-50MHz
+    ^-- also will have an FPU
+RAM: 128MB-1GB SDRAM/DDR
+Fixed Storage: Internal SCSI
+Removable Storage: External SCSI (DB25) and a 1.44MB HD floppy drive
+Planned Graphics: VERA, as found on the Commander X16
+    ^-- for the emulator, it'll only emulate text-only video, like on old Data Terminals (or like a system like found in the Apple-1/Apple-II)
+On-Board I/O (doesnt include the VERA I/O):
+    RS232
+    PS/2 Keyboard and Mouse 
+        ^-- mouse unsupported in the emulator for obvious reasons if you have a reading level of at minimum of a 5th grader
+    DB25 External SCSI
+    Ethernet*
+        ^-- depends on if i can implement it
+    more soon i just havent come up with more I/O that would make sense
+Audio: Built-In speakers and/or a headphone jack
+    ^-- unsupported in the emulator
+
+thats all for now, more specs are still TBD

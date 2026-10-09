@@ -1,7 +1,7 @@
 # az030 - a 68030-based homebrew computer
-**! DISCLAIMER !**
+**! AI DISCLAIMER !**
 
-AI was used in the creation of this
+Claude Code was used in the creation of this
 
 # info
 
@@ -9,22 +9,11 @@ AI was used in the creation of this
 |-------------------------------|-------------------------------------------------------|
 | 16–50 MHz clock               | CPU clock generated in FPGA (25 MHz from a 50 MHz osc) |
 | 128 MB – 1 GB RAM             | 32 KB BRAM stand-in; SDRAM/DDR controller is next     |
-| Glue logic in FPGA            | (done) bus bridge, address decode, reset, UART, sysctrl    |
+| Glue logic in FPGA            | bus bridge, address decode, reset, UART, sysctrl    |
 | Video in FPGA                 | Address space reserved (VRAM `0xFD000000`, regs `0xFE003000`) |
 | SCSI                          | Address space reserved (`0xFE002000`)                 |
 | UNIX-like OS                  | Needs MMU → the 68030 (not 68EC030) was chosen for this |
 
-## Layout
-```
-rtl/bus_bridge.v   68030 async bus <-> simple internal bus (byte enables, BERR timeout)
-rtl/top.v          pins, clock/reset, address decode, read mux
-rtl/rom.v          16 KB boot ROM (BRAM, loaded from fw/boot.hex)
-rtl/ram_bram.v     32 KB RAM (BRAM) – placeholder for SDRAM
-rtl/uart.v         8N1 UART
-rtl/sysctrl.v      ROM-overlay control, ID, LEDs
-fw/boot.S          prints a banner, then echoes UART input
-sim/tb_top.v       bus-functional testbench acting as a 68030
-```
 
 ## Memory map
 | Address        | Size   | What                                   |
