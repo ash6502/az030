@@ -1,0 +1,10 @@
+[package]
+name = "az030-emu"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+libc = "0.2.190"
+m68k = "0.14.3"
+serde = { version = "1.0.229", features = ["derive"] }
+toml = "1.1.8"
