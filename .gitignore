@@ -1,3 +1,5 @@
 .DS_Store
 *.lck
 .history
+emu/target
+emu/disks/*.img

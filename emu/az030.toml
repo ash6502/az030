@@ -1,0 +1,37 @@
+# az030 emulator configuration.
+# Relative paths are resolved against the directory this file is in.
+
+[machine]
+# RAM size: bytes, or a string with a K/M/G suffix. 4K-1G, multiple of 4K.
+# The current FPGA build has 32K; the board is planned for 128M-1G.
+# The bundled boot ROM needs at least 32K.
+ram_size = "128M"
+# CPU clock, used to pace emulation to real time (the spec allows 16-50 MHz).
+clock_mhz = 25
+# Set to false to run as fast as the host can.
+throttle = true
+# Value returned by the SYSCTRL ID register (default "AZ30").
+# sysctrl_id = 0x415A3330
+
+[rom]
+# Raw boot ROM image, up to 1 MB, mirrored across 0xFFF00000-0xFFFFFFFF.
+file = "../rom/boot.bin"
+
+[scsi]
+# The SCSI block at 0xFE002000 is virtual (see emu/src/scsi.rs for the registers).
+# When disabled, accesses to it bus-error like the reserved block on the FPGA.
+enabled = true
+# host_id = 7
+
+# One [[scsi.disk]] table per target. Images are raw 512-byte-block files.
+[[scsi.disk]]
+id = 0
+image = "disks/hd0.img"
+read_only = false
+# Creates a blank image of this size if the file does not exist.
+create_size = "64M"
+
+# [[scsi.disk]]
+# id = 1
+# image = "disks/boot.img"
+# read_only = true
