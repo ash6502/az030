@@ -1,0 +1,17 @@
+# Cross-compiling for the az030 (see Makefile for the full build).
+#
+# rustc emits LLVM bitcode (-C linker-plugin-lto) and azld compiles it with the
+# patched llc from .toolchain/ (see toolchain/README.md for why).
+
+[target.m68k-unknown-none-elf]
+linker = "target/release/azld"
+rustflags = [
+    "-C", "target-cpu=M68030",
+    "-C", "linker-flavor=ld",
+    "-C", "relocation-model=static",
+    "-C", "linker-plugin-lto",
+]
+
+[env]
+AZLD_LLC = { value = ".toolchain/llvm/bin/llc", relative = true }
+AZLD_CACHE = { value = "target/azld-cache", relative = true }

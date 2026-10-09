@@ -1,0 +1,8 @@
+[package]
+name = "azas"
+version = "0.1.0"
+edition = "2024"
+description = "68030/68882/PMMU assembler (vasm-style Motorola syntax), shared by the host build and the az030 OS's own as"
+
+[dependencies]
+azld = { path = "../azld" }

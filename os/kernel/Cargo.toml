@@ -1,0 +1,19 @@
+[package]
+name = "kernel"
+version = "0.1.0"
+edition = "2024"
+description = "The az030 OS kernel"
+
+[[bin]]
+name = "kernel"
+path = "src/main.rs"
+test = false
+bench = false
+
+[dependencies]
+azsys = { path = "../lib/azsys" }
+azfs = { path = "../lib/azfs" }
+azld = { path = "../lib/azld" }
+
+[build-dependencies]
+azas = { path = "../lib/azas" }

@@ -1,0 +1,7 @@
+[package]
+name = "azfs"
+version = "0.1.0"
+edition = "2024"
+description = "On-disk layout of azfs, the az030 OS file system"
+
+[dependencies]

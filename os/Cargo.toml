@@ -1,0 +1,12 @@
+[workspace]
+resolver = "3"
+members = ["tools", "lib/azld", "lib/azas", "lib/azfs", "lib/azsys", "kernel"]
+default-members = ["tools"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = 2
+debug = false

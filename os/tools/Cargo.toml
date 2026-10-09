@@ -1,0 +1,10 @@
+[package]
+name = "az-tools"
+version = "0.1.0"
+edition = "2024"
+description = "Host-side build tools for the az030 OS: linker, assembler, compilers, disk image builder"
+
+[dependencies]
+azld = { path = "../lib/azld" }
+azas = { path = "../lib/azas" }
+azfs = { path = "../lib/azfs" }

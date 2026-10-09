@@ -7,6 +7,7 @@ as your terminal, and an optional virtual SCSI bus.
 ```sh
 cargo run --release                      # uses ./az030.toml
 cargo run --release -- -c other.toml -v  # -v reports LED changes on stderr
+cargo run --release -- --trace 200       # print the last 200 instructions (outside ROM) on exit
 ```
 
 The UART connects to the terminal. **Ctrl-] q** quits, **Ctrl-] r** resets the machine, and
@@ -22,6 +23,7 @@ The UART connects to the terminal. **Ctrl-] q** quits, **Ctrl-] r** resets the m
 | `machine.sysctrl_id`    | Value of the SYSCTRL ID register (default `0x415A3330`, "AZ30") |
 | `rom.file`              | Raw boot ROM image, up to 1 MB, mirrored over `0xFFF00000+` |
 | `scsi.enabled`          | `false` leaves `0xFE002000` unmapped (bus error)           |
+| `timer.enabled`         | `false` leaves `0xFE004000` unmapped (default `true`)      |
 | `scsi.host_id`          | Host adapter ID (default 7)                                |
 | `[[scsi.disk]]`         | `id`, `image`, `read_only`, `create_size`                  |
 
@@ -38,7 +40,27 @@ Relative paths resolve against the config file's directory.
   accesses to unmapped space (including the reserved VRAM and video blocks) raise a bus error.
 
 Not emulated yet: the VERA/video, PS/2 keyboard, the floppy, and Ethernet. None of them
-have registers in the memory map. No interrupt sources exist yet either.
+have registers in the memory map.
+
+## Timer / interrupt controller (`0xFE004000`)
+
+Also emulator-defined, so a preemptive OS has a clock. It provides a periodic tick, a
+microsecond counter, a wall-clock RTC and interrupt enables. Interrupts are
+autovectored: the tick is IPL 6 (vector 30), UART receive is IPL 4 (vector 28).
+Levels are re-evaluated once per millisecond of emulated time. Registers are 32-bit.
+
+| Offset | R/W | Register | Meaning                                                   |
+|--------|-----|----------|-----------------------------------------------------------|
+| `0x00` | RW  | CTRL     | bit0 tick enable                                          |
+| `0x04` | RW  | PERIOD   | tick period in µs (100–1000000, default 10000 = 100 Hz)   |
+| `0x08` | RW  | STATUS   | bit0 tick pending; write 1 to acknowledge                 |
+| `0x0C` | R   | USEC_LO  | µs since reset, low word (reading it latches USEC_HI)     |
+| `0x10` | R   | USEC_HI  | high word                                                 |
+| `0x14` | R   | RTC      | host wall clock, seconds since 1970-01-01 UTC             |
+| `0x18` | RW  | INTEN    | bit0 tick → IPL 6, bit1 UART RX data → IPL 4              |
+| `0x1C` | R   | INTPEND  | bit0 tick, bit1 UART RX (pending and enabled)             |
+| `0x20` | W   | POWER    | write `0x504F4646` ("POFF") to power off (emulator exits) |
+| `0x24` | R   | ID       | `0x54494D52` ("TIMR")                                     |
 
 ## Virtual SCSI (`0xFE002000`)
 

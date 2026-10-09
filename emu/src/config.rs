@@ -17,6 +17,21 @@ pub struct Config {
     pub rom: RomConfig,
     #[serde(default)]
     pub scsi: ScsiConfig,
+    #[serde(default)]
+    pub timer: TimerConfig,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct TimerConfig {
+    /// When false the timer block at 0xFE004000 is unmapped (bus error).
+    pub enabled: bool,
+}
+
+impl Default for TimerConfig {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
 }
 
 #[derive(Debug, Deserialize)]

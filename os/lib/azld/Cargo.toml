@@ -1,0 +1,7 @@
+[package]
+name = "azld"
+version = "0.1.0"
+edition = "2024"
+description = "Static ELF32 linker for m68k, shared by the host build and the az030 OS's own ld"
+
+[dependencies]

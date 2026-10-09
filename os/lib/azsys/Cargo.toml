@@ -1,0 +1,7 @@
+[package]
+name = "azsys"
+version = "0.1.0"
+edition = "2024"
+description = "az030 OS system call ABI: numbers, errno, signals, structures"
+
+[dependencies]

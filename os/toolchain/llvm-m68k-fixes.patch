@@ -1,0 +1,140 @@
+--- a/llvm/lib/Target/M68k/M68kISelDAGToDAG.cpp	2026-09-07 09:01:29
++++ b/llvm/lib/Target/M68k/M68kISelDAGToDAG.cpp	2026-10-09 17:02:12
+@@ -100,9 +100,9 @@
+     return BaseType == Base::RegBase && BaseReg.getNode() != nullptr;
+   }
+ 
+-  bool hasIndexReg() const {
+-    return BaseType == Base::RegBase && IndexReg.getNode() != nullptr;
+-  }
++  // An index register can accompany a frame-index base too (FI + reg); it
++  // must be seen there, or the index would be silently dropped.
++  bool hasIndexReg() const { return IndexReg.getNode() != nullptr; }
+ 
+   /// True if address mode type supports displacement
+   bool isDispAddrType() const {
+@@ -247,6 +247,12 @@
+   auto *LD = dyn_cast<LoadSDNode>(ST->getValue());
+   if (!LD)
+     return false;
++  // A memory-to-memory MOVE copies exactly the stored width, so the load must
++  // be a plain load of that width: folding an extending load (or feeding a
++  // truncating store) would read the wrong bytes.
++  if (LD->getExtensionType() != ISD::NON_EXTLOAD || ST->isTruncatingStore() ||
++      LD->getMemoryVT() != ST->getMemoryVT())
++    return false;
+   // Load and store chains can be unrelated; guard against either side
+   // depending on a different call sequence boundary.
+   CallSeqChainInfo LoadInfo = getCallSeqChainInfo(LD->getChain());
+@@ -823,17 +829,17 @@
+     return false;
+   }
+ 
++  if (AM.hasIndexReg()) {
++    LLVM_DEBUG(dbgs() << "REJECT: Cannot match Index\n");
++    return false;
++  }
++
+   // If this is a frame index, grab it
+   if (getFrameIndexAddress(AM, SDLoc(N), Disp, Base)) {
+     LLVM_DEBUG(dbgs() << "SUCCESS matched FI\n");
+     return true;
+   }
+ 
+-  if (AM.hasIndexReg()) {
+-    LLVM_DEBUG(dbgs() << "REJECT: Cannot match Index\n");
+-    return false;
+-  }
+-
+   if (!AM.hasBaseReg()) {
+     LLVM_DEBUG(dbgs() << "REJECT: No Base reg\n");
+     return false;
+@@ -1064,6 +1070,15 @@
+     return false;
+   }
+ 
++  // An address the richer modes could not take (e.g. a frame index plus a
++  // register: ARID has no index and ARII's 8-bit displacement cannot hold a
++  // frame offset) is computed into a register and used as (An).
++  if ((AM.hasIndexReg() || AM.Disp != 0) && !AM.hasSymbolicDisplacement()) {
++    Base = N;
++    LLVM_DEBUG(dbgs() << "SUCCESS: address computed into base register\n");
++    return true;
++  }
++
+   // AddrType::ARI does not use these
+   if (AM.hasIndexReg() || AM.Disp != 0) {
+     LLVM_DEBUG(dbgs() << "REJECT: Cannot match Index or Disp\n");
+--- a/llvm/lib/Target/M68k/M68kInstrInfo.cpp	2026-09-07 09:01:29
++++ b/llvm/lib/Target/M68k/M68kInstrInfo.cpp	2026-10-09 17:07:04
+@@ -688,6 +688,31 @@
+                                 const DebugLoc &DL, Register DstReg,
+                                 Register SrcReg, bool KillSrc,
+                                 bool RenamableDest, bool RenamableSrc) const {
++  // A MOVE into a data register sets the condition codes, but copies are
++  // inserted wherever the register allocator needs them, including between a
++  // flag-setting instruction and the branch that reads the flags. Keep CCR
++  // intact around such copies. (MOVEA to an address register leaves CCR alone.)
++  auto IsData = [](Register R) {
++    return M68k::DR32RegClass.contains(R) || M68k::DR16RegClass.contains(R) ||
++           M68k::DR8RegClass.contains(R);
++  };
++  bool SaveCCR =
++      IsData(DstReg) && SrcReg != M68k::CCR && SrcReg != M68k::SP &&
++      MBB.computeRegisterLiveness(&RI, M68k::CCR, MI, 64) !=
++          MachineBasicBlock::LQR_Dead;
++  if (SaveCCR)
++    BuildMI(MBB, MI, DL, get(M68k::MOV16ec))
++        .addReg(M68k::SP)
++        .addReg(M68k::CCR);
++  copyPhysRegMove(MBB, MI, DL, DstReg, SrcReg, KillSrc);
++  if (SaveCCR)
++    BuildMI(MBB, MI, DL, get(M68k::MOV16co), M68k::CCR).addReg(M68k::SP);
++}
++
++void M68kInstrInfo::copyPhysRegMove(MachineBasicBlock &MBB,
++                                    MachineBasicBlock::iterator MI,
++                                    const DebugLoc &DL, Register DstReg,
++                                    Register SrcReg, bool KillSrc) const {
+   const auto &Subtarget = MBB.getParent()->getSubtarget<M68kSubtarget>();
+   unsigned Opc = 0;
+ 
+--- a/llvm/lib/Target/M68k/M68kInstrInfo.h	2026-09-07 09:01:29
++++ b/llvm/lib/Target/M68k/M68kInstrInfo.h	2026-10-09 17:07:04
+@@ -269,6 +269,11 @@
+                         const DebugLoc &DL,
+                         int *BytesAdded = nullptr) const override;
+ 
++  /// Emit the register-to-register move for a copy (may clobber CCR).
++  void copyPhysRegMove(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
++                       const DebugLoc &DL, Register DestReg, Register SrcReg,
++                       bool KillSrc) const;
++
+   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
+                    const DebugLoc &DL, Register DestReg, Register SrcReg,
+                    bool KillSrc, bool RenamableDest = false,
+--- a/llvm/lib/Target/M68k/M68kISelLowering.cpp	2026-09-07 09:01:29
++++ b/llvm/lib/Target/M68k/M68kISelLowering.cpp	2026-10-09 17:25:49
+@@ -585,6 +585,12 @@
+                      *DAG.getContext());
+   CCInfo.AnalyzeCallOperands(Outs, CC_M68k);
+ 
++  // The hidden struct-return pointer is only on the stack (and popped by the
++  // callee) if the calling convention put it there; fastcc passes it in a
++  // register without the 'inreg' flag.
++  if (SR == StackStructReturn && !ArgLocs.empty() && ArgLocs[0].isRegLoc())
++    SR = RegStructReturn;
++
+   // Get a count of how many bytes are to be pushed on the stack.
+   unsigned NumBytes = CCInfo.getAlignedCallFrameSize();
+   if (IsSibcall) {
+@@ -1051,7 +1057,8 @@
+   } else {
+     MMFI->setBytesToPopOnReturn(0); // Callee pops nothing.
+     // If this is an sret function, the return should pop the hidden pointer.
+-    if (!canGuaranteeTCO(CCID) && argsAreStructReturn(Ins) == StackStructReturn)
++    if (!canGuaranteeTCO(CCID) && argsAreStructReturn(Ins) == StackStructReturn &&
++        !ArgLocs.empty() && ArgLocs[0].isMemLoc())
+       MMFI->setBytesToPopOnReturn(4);
+   }
+ 

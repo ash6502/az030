@@ -8,12 +8,14 @@
 //! | `0xFE00_1000` | SYSCTRL: `+0` BOOT, `+4` ID, `+8` LEDS                      |
 //! | `0xFE00_2000` | SCSI (emulator-defined, see scsi.rs)                        |
 //! | `0xFE00_3000` | Video registers (reserved -> bus error)                     |
+//! | `0xFE00_4000` | Timer / interrupt controller (emulator-defined, see timer.rs) |
 //! | `0xFFF0_0000` | Boot ROM, mirrored across 1 MB                              |
 //!
 //! Peripheral registers are 32-bit only; byte/word accesses to them, and any access to an
 //! unmapped address, raise a bus error.
 
 use crate::scsi::Scsi;
+use crate::timer::Timer;
 use m68k::AddressBus;
 use m68k::core::memory::{BusFault, BusFaultKind};
 use std::collections::VecDeque;
@@ -22,6 +24,7 @@ use std::io::Write;
 const UART_BASE: u32 = 0xFE00_0000;
 const SYSCTRL_BASE: u32 = 0xFE00_1000;
 const SCSI_BASE: u32 = 0xFE00_2000;
+const TIMER_BASE: u32 = 0xFE00_4000;
 const ROM_BASE: u32 = 0xFFF0_0000;
 
 const UART_TX_READY: u32 = 1 << 0;
@@ -39,6 +42,7 @@ pub struct Bus {
     /// Set when the LEDs change, so the front end can show them.
     pub leds_changed: bool,
     pub scsi: Option<Scsi>,
+    pub timer: Option<Timer>,
 }
 
 fn fault(address: u32) -> BusFault {
@@ -46,7 +50,13 @@ fn fault(address: u32) -> BusFault {
 }
 
 impl Bus {
-    pub fn new(ram_size: usize, rom: Vec<u8>, sysctrl_id: u32, scsi: Option<Scsi>) -> Self {
+    pub fn new(
+        ram_size: usize,
+        rom: Vec<u8>,
+        sysctrl_id: u32,
+        scsi: Option<Scsi>,
+        timer: Option<Timer>,
+    ) -> Self {
         Self {
             ram: vec![0; ram_size],
             rom,
@@ -57,6 +67,7 @@ impl Bus {
             leds: 0,
             leds_changed: false,
             scsi,
+            timer,
         }
     }
 
@@ -65,6 +76,14 @@ impl Bus {
         self.overlay = true;
         self.leds = 0;
         self.leds_changed = true;
+        if let Some(t) = &mut self.timer {
+            t.reset();
+        }
+    }
+
+    /// Interrupt level the devices are requesting.
+    pub fn irq_level(&self) -> u8 {
+        self.timer.as_ref().map_or(0, |t| t.irq_level(!self.uart_rx.is_empty()))
     }
 
     #[inline]
@@ -115,6 +134,10 @@ impl Bus {
             a if (SCSI_BASE..SCSI_BASE + 0x1000).contains(&a) => {
                 self.scsi.as_ref()?.read(a - SCSI_BASE)
             }
+            a if (TIMER_BASE..TIMER_BASE + 0x1000).contains(&a) => {
+                let rx = !self.uart_rx.is_empty();
+                self.timer.as_mut()?.read(a - TIMER_BASE, rx)
+            }
             _ => None,
         }
     }
@@ -136,6 +159,9 @@ impl Bus {
                 if !scsi.write(a - SCSI_BASE, val, &mut self.ram) {
                     return None;
                 }
+            }
+            a if (TIMER_BASE..TIMER_BASE + 0x1000).contains(&a) => {
+                self.timer.as_mut()?.write(a - TIMER_BASE, val)?;
             }
             _ => return None,
         }
