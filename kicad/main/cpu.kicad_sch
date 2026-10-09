@@ -5998,16 +5998,6 @@
 		)
 		(uuid "854aba65-4092-4a9d-915d-60c382f330f4")
 	)
-	(bus
-		(pts
-			(xy 97.79 119.38) (xy 97.79 203.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8a17fa59-89c0-4c7d-a98b-1e4614edfc31")
-	)
 	(wire
 		(pts
 			(xy 189.23 157.48) (xy 181.61 157.48)
@@ -6577,6 +6567,16 @@
 			(type default)
 		)
 		(uuid "d1f8759d-1d65-4e22-9678-c97e5e736ef0")
+	)
+	(bus
+		(pts
+			(xy 97.79 119.38) (xy 97.79 203.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d2215ffc-d0a5-4972-8357-2a4147d67ecd")
 	)
 	(wire
 		(pts
@@ -8424,7 +8424,7 @@
 	)
 	(hierarchical_label "Address{0..31}"
 		(shape input)
-		(at 97.79 123.19 180)
+		(at 97.79 121.92 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -10801,7 +10801,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_DIP:DIP-14_W7.62mm"
+		(property "Footprint" "Package_DIP:DIP-14_W7.62mm_LongPads"
 			(at 29.21 81.28 0)
 			(hide yes)
 			(show_name no)

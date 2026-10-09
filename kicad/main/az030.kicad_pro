@@ -676,7 +676,7 @@
         "uuid": "23b23725-f42e-4e44-9db5-2c9059cb0f3d"
       }
     ],
-    "used_designators": "J1-10,#PWR1-41,D1-2,C1-3,U1-10,F1-4,Y1,R1-8,JP1,SW1-2",
+    "used_designators": "J1-12,#PWR1-50,D1-2,C1-4,U1-13,F1-4,Y1,R1-8,JP1,SW1-2",
     "variants": []
   },
   "sheets": [
@@ -727,6 +727,10 @@
     [
       "db60c1f9-abf5-4e92-b1f8-ebf6a60e6539",
       "PCI"
+    ],
+    [
+      "301123eb-d6b2-4cea-9dab-48ee9291e2da",
+      "RS232"
     ]
   ],
   "text_variables": {},

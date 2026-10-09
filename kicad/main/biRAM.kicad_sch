@@ -6,6 +6,7 @@
 	(paper "A4")
 	(title_block
 		(date "2026-10-07")
+		(rev "A0001")
 		(company "azalea68k")
 		(comment 1 "revision format: Axxxx")
 	)

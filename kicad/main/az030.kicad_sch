@@ -67,7 +67,7 @@
 		)
 	)
 	(sheet
-		(at 49.53 82.55)
+		(at 29.21 80.01)
 		(size 12.7 3.81)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -83,7 +83,7 @@
 		)
 		(uuid "3ae1afca-f197-40ef-a83e-ae03b47d3802")
 		(property "Sheetname" "SIMMs"
-			(at 49.53 81.8384 0)
+			(at 29.21 79.2984 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -94,7 +94,7 @@
 			)
 		)
 		(property "Sheetfile" "simms.kicad_sch"
-			(at 49.53 86.9446 0)
+			(at 29.21 84.4046 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -113,8 +113,8 @@
 		)
 	)
 	(sheet
-		(at 102.87 78.74)
-		(size 12.7 3.81)
+		(at 96.52 67.31)
+		(size 21.59 22.86)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
@@ -129,7 +129,7 @@
 		)
 		(uuid "6a160ea2-628c-41db-aca5-354786d6ac13")
 		(property "Sheetname" "Input And Output"
-			(at 102.87 78.0284 0)
+			(at 96.52 66.5984 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -140,7 +140,7 @@
 			)
 		)
 		(property "Sheetfile" "io.kicad_sch"
-			(at 102.87 83.1346 0)
+			(at 96.52 90.7546 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -148,6 +148,86 @@
 					(size 1.27 1.27)
 				)
 				(justify left top)
+			)
+		)
+		(pin "PS{slash}2 D0" input
+			(at 96.52 68.58 180)
+			(uuid "fc1a89e1-9fe0-4cd5-bfbe-1cd7dc8066f4")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "PS{slash}2 D1" input
+			(at 96.52 71.12 180)
+			(uuid "4ef78bf7-327e-4209-b6ff-7f2e7311716e")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "PS{slash}2 D2" input
+			(at 96.52 73.66 180)
+			(uuid "e556a9eb-c69e-4c4a-b966-b56cab4ede00")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "PS{slash}2 D3" input
+			(at 96.52 76.2 180)
+			(uuid "f9e602c3-b1e7-43dc-b09b-c3296c6ab876")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "PS{slash}2 D4" input
+			(at 96.52 78.74 180)
+			(uuid "cf071e4f-9a99-4e47-9c40-93c039f42a23")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "PS{slash}2 D5" input
+			(at 96.52 81.28 180)
+			(uuid "39fd8208-05d8-4c01-85e9-2e29dc58ebc2")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "PS{slash}2 D6" input
+			(at 96.52 83.82 180)
+			(uuid "53f086fc-f66b-4f9e-b411-8115c1ff09c9")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "PS{slash}2 D7" input
+			(at 96.52 86.36 180)
+			(uuid "c52d3cdc-e75e-4cbf-a15d-752030dc3365")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
 			)
 		)
 		(instances
@@ -159,8 +239,8 @@
 		)
 	)
 	(sheet
-		(at 101.6 88.9)
-		(size 12.7 3.81)
+		(at 104.14 110.49)
+		(size 27.94 13.97)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
@@ -175,7 +255,7 @@
 		)
 		(uuid "96549751-6a8b-4e78-ae8e-f3a61efd15ce")
 		(property "Sheetname" "Peripheral Management"
-			(at 101.6 88.1884 0)
+			(at 104.14 109.7784 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -186,7 +266,7 @@
 			)
 		)
 		(property "Sheetfile" "perMan.kicad_sch"
-			(at 101.6 93.2946 0)
+			(at 104.14 125.0446 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -205,7 +285,7 @@
 		)
 	)
 	(sheet
-		(at 54.61 93.98)
+		(at 29.21 71.12)
 		(size 12.7 3.81)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -221,7 +301,7 @@
 		)
 		(uuid "b901115d-16bc-4b13-ad32-1037a568b796")
 		(property "Sheetname" "Built-in Memory"
-			(at 54.61 93.2684 0)
+			(at 29.21 70.4084 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -232,7 +312,7 @@
 			)
 		)
 		(property "Sheetfile" "biRAM.kicad_sch"
-			(at 54.61 98.3746 0)
+			(at 29.21 75.5146 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects

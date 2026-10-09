@@ -4,4 +4,5 @@
 	(lib (name "Sockets") (type "KiCad") (uri "/Users/azalea/Downloads/Sockets.pretty") (options "") (descr ""))
 	(lib (name "az030") (type "KiCad") (uri "/Users/azalea/dev/az030.pretty") (options "") (descr ""))
 	(lib (name "Sockets") (type "KiCad") (uri "${KIPRJMOD}/Sockets.pretty") (options "") (descr ""))
+	(lib (name "Footprints") (type "KiCad") (uri "/Users/azalea/Downloads/KiCAD-Libraries-master/Footprints.pretty") (options "") (descr ""))
 )
