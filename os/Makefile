@@ -27,9 +27,11 @@ XCARGO  := cargo build --release --target $(TARGET) \
            -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
 XOUT    := $(OS)/target/$(TARGET)/release
 
-.PHONY: all toolchain tools emu cgtest kernel boot clean run
+.PHONY: all disk toolchain tools emu cgtest kernel boot user root clean run $(BUILD)/disk.img
 
-all: $(BUILD)/disk.img
+all: disk
+
+disk: $(BUILD)/disk.img
 
 # ---- toolchain ---------------------------------------------------------------
 
@@ -68,6 +70,59 @@ cgtest: tools emu
 	    | tr -d '\r' | sed -n '/^=== BEGIN ===$$/,/^=== END ===$$/p' | sed '1d;$$d' > $(BUILD)/cgtest/m68k.txt
 	$(TOOLS)/cgtest-host > $(BUILD)/cgtest/host.txt
 	diff -u $(BUILD)/cgtest/host.txt $(BUILD)/cgtest/m68k.txt && echo "cgtest: PASS ($$(wc -l < $(BUILD)/cgtest/host.txt) lines identical)"
+
+# ---- kernel and bootloader ---------------------------------------------------------
+
+KERNEL_LOAD := 0x10000
+
+kernel: tools
+	$(XCARGO) -p kernel
+	mkdir -p $(BUILD)
+	cp $(XOUT)/kernel $(BUILD)/kernel.bin
+	cp $$(ls -t $(XOUT)/build/kernel-*/out/kernel.map | head -1) $(BUILD)/kernel.map
+
+boot: tools
+	mkdir -p $(BUILD)
+	$(AZAS) -f bin -o $(BUILD)/boot.bin boot/boot.s
+
+# ---- disk image -------------------------------------------------------------------------
+
+DISK_SIZE ?= 64M
+CMDLINE   ?=
+
+$(BUILD)/disk.img: kernel boot root
+	$(MKDISK) -o $@ --size $(DISK_SIZE) --root $(BUILD)/root --manifest root/manifest \
+	    --boot $(BUILD)/boot.bin --kernel $(BUILD)/kernel.bin --load $(KERNEL_LOAD) \
+	    --entry 0x$$(grep ' _start$$' $(BUILD)/kernel.map | cut -d' ' -f1) --cmdline "$(CMDLINE)"
+
+# The root file system is assembled in build/root from os/root (static files) and
+# the user programs.
+SBIN_PROGS := init halt mount umount
+# extra names for programs that behave differently depending on argv[0]
+ALIASES := chown:chgrp readlink:realpath grep:egrep grep:fgrep test:[ od:hexdump \
+           more:less halt:reboot halt:poweroff id:groups
+
+user: tools
+	$(XCARGO) -p user
+
+root: user
+	rm -rf $(BUILD)/root
+	mkdir -p $(BUILD)/root/bin $(BUILD)/root/sbin
+	cp -R root/files/. $(BUILD)/root/
+	for src in user/src/bin/*.rs user/src/bin/*/main.rs; do \
+	    p=$$(basename $$src .rs); [ $$p = main ] && p=$$(basename $$(dirname $$src)); \
+	    case " $(SBIN_PROGS) " in *" $$p "*) d=sbin;; *) d=bin;; esac; \
+	    install -m 755 $(XOUT)/$$p $(BUILD)/root/$$d/$$p; \
+	done
+	for a in $(ALIASES); do \
+	    src=$${a%%:*}; dst=$${a#*:}; \
+	    d=bin; [ -f $(BUILD)/root/sbin/$$src ] && d=sbin; \
+	    ln -sf $$src "$(BUILD)/root/$$d/$$dst"; \
+	done
+
+run: $(BUILD)/disk.img emu
+	sed -e 's|@DISK@|$(BUILD)/disk.img|' -e 's|@ROM@|$(ROOT)/rom/boot.bin|' az030.toml.in > $(BUILD)/az030.toml
+	$(EMU) -c $(BUILD)/az030.toml
 
 clean:
 	rm -rf $(BUILD)

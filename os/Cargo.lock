@@ -53,8 +53,18 @@ dependencies = [
 name = "kernel"
 version = "0.1.0"
 dependencies = [
- "azas",
+ "azbuild",
  "azfs",
  "azld",
+ "azrt",
+ "azsys",
+]
+
+[[package]]
+name = "user"
+version = "0.1.0"
+dependencies = [
+ "azbuild",
+ "azrt",
  "azsys",
 ]

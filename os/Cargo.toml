@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["tools", "lib/azld", "lib/azas", "lib/azfs", "lib/azsys", "lib/azbuild", "lib/azrt", "kernel", "tests/cgtest"]
+members = ["tools", "lib/azld", "lib/azas", "lib/azfs", "lib/azsys", "lib/azbuild", "lib/azrt", "kernel", "tests/cgtest", "user"]
 default-members = ["tools"]
 
 [profile.dev]
