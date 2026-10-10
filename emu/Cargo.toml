@@ -8,3 +8,8 @@ libc = "0.2.190"
 m68k = "0.14.3"
 serde = { version = "1.0.229", features = ["derive"] }
 toml = "1.1.8"
+
+# Local copy of m68k 0.14.3 with the 68030 transparent-translation register layout
+# fixed (see vendor/m68k/src/mmu/ttr.rs).
+[patch.crates-io]
+m68k = { path = "vendor/m68k" }
