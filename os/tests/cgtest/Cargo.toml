@@ -1,0 +1,17 @@
+[package]
+name = "cgtest"
+version = "0.1.0"
+edition = "2024"
+description = "Code-generation self-test for the m68k toolchain (see `make cgtest`)"
+
+[[bin]]
+name = "cgtest"
+path = "src/main.rs"
+test = false
+bench = false
+
+[dependencies]
+azrt = { path = "../../lib/azrt" }
+
+[build-dependencies]
+azbuild = { path = "../../lib/azbuild" }

@@ -1,0 +1,8 @@
+# /etc/rc: system start-up, run by init before the first login.
+
+# clean out temporary files
+for f in /tmp/* /tmp/.[!.]*; do
+    [ -e "$f" ] && rm -rf "$f"
+done
+
+echo "Welcome to az030 UNIX."

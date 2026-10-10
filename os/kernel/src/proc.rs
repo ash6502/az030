@@ -227,26 +227,29 @@ pub fn start_init() -> ! {
     let mut p = blank(*NEXT_PID.get());
     *NEXT_PID.get() += 1;
     p.cwd = Some(fs::root_inode());
-    p.tty = azsys::makedev(azsys::dev::TTY_MAJOR, 0);
-    // fds 0, 1, 2 on the console
-    let con = file::open_path(&mut p, "/dev/console", azsys::flags::O_RDWR, 0).expect("cannot open /dev/console");
+    let tf = prepare_kstack(&mut p);
+    // path lookups and opens below act on behalf of the current process
+    let slot = insert(p).unwrap();
+    *CURRENT.get() = slot;
+    let p = current();
+    // fds 0, 1, 2 on the console; init has no controlling terminal (the sessions it
+    // starts take the console)
+    let con = file::open_path(p, "/dev/console", azsys::flags::O_RDWR | azsys::flags::O_NOCTTY, 0).expect("cannot open /dev/console");
     p.files[0] = Some(con.clone());
     p.files[1] = Some(con.clone());
     p.files[2] = Some(con);
-    let tf = prepare_kstack(&mut p);
     let init = crate::config().init.clone();
     let argv = vec![init.clone().into_bytes()];
     let envp = vec![b"PATH=/bin:/sbin:/usr/bin".to_vec(), b"HOME=/".to_vec(), b"TERM=vt100".to_vec()];
-    if let Err(e) = exec::exec(&mut p, unsafe { &mut *tf }, &init, argv, envp) {
+    if let Err(e) = exec::exec(p, unsafe { &mut *tf }, &init, argv, envp) {
         panic!("cannot run {}: {}", init, message(e));
     }
-    crate::tty::set_session(p.sid, p.pgid);
-    let slot = insert(p).unwrap();
-    let mut dummy = 0u32;
-    *CURRENT.get() = slot;
+    if !crate::config().quiet {
+        kprintln!("Starting {} ...", init);
+    }
     let p = current();
     p.space().activate();
-    kprintln!("Starting {} ...", crate::config().init);
+    let mut dummy = 0u32;
     unsafe { arch::switch_context(&mut dummy, p.ksp, core::ptr::null_mut(), p.fpu.as_ptr()) };
     unreachable!()
 }

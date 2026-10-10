@@ -1,0 +1,19 @@
+# /etc/profile: read by login shells.
+
+PATH=/bin:/usr/bin
+[ "$USER" = root ] && PATH=$PATH:/sbin
+export PATH
+export TERM=${TERM:-vt100}
+export EDITOR=edit
+export PAGER=more
+umask 022
+
+if [ "$USER" = root ]; then
+    PS1='\u@\h:\w# '
+else
+    PS1='\u@\h:\w$ '
+fi
+
+alias ll='ls -l'
+alias la='ls -la'
+alias l='ls -CF'

@@ -276,3 +276,50 @@ cmp_lt: moveq   #0,d0
         rts
 cmp_gt: moveq   #2,d0
         rts
+
+; ---- 128-bit division --------------------------------------------------------
+; u128 op(u128 a, u128 b): the result goes through a hidden pointer passed
+; first, which the callee pops (rtd #4). The work is done by azrt_divmod128
+; (lib/azrt, Rust).
+        xdef    __udivti3
+        xdef    __umodti3
+        xdef    __divti3
+        xdef    __modti3
+        xref    azrt_divmod128
+
+__udivti3:
+        moveq   #0,d0                   ; bit0: want remainder, bit1: signed
+        bra.s   ti_common
+__umodti3:
+        moveq   #1,d0
+        bra.s   ti_common
+__divti3:
+        moveq   #2,d0
+        bra.s   ti_common
+__modti3:
+        moveq   #3,d0
+ti_common:
+        link    a6,#-32                 ; -32(a6) quotient, -16(a6) remainder
+        move.l  d0,-(sp)
+        lsr.l   #1,d0
+        move.l  d0,-(sp)                ; signed
+        pea     -16(a6)
+        pea     -32(a6)
+        pea     28(a6)                  ; b
+        pea     12(a6)                  ; a
+        jsr     azrt_divmod128
+        lea     20(sp),sp
+        move.l  (sp)+,d0
+        lea     -32(a6),a0
+        btst    #0,d0
+        beq.s   .copy
+        lea     -16(a6),a0
+.copy:  move.l  8(a6),a1                ; result pointer
+        move.l  (a0)+,(a1)+
+        move.l  (a0)+,(a1)+
+        move.l  (a0)+,(a1)+
+        move.l  (a0)+,(a1)+
+        move.l  8(a6),d0
+        move.l  d0,a0
+        unlk    a6
+        rtd     #4

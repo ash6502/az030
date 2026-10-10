@@ -43,8 +43,6 @@ checksum = "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78"
 [[package]]
 name = "m68k"
 version = "0.14.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d147b9f460ceae5beb0ee82c186f70f15dd15e1de317187b7f018eff139626a9"
 
 [[package]]
 name = "proc-macro2"

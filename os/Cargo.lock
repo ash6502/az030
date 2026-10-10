@@ -19,6 +19,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "azbuild"
+version = "0.1.0"
+dependencies = [
+ "azas",
+]
+
+[[package]]
 name = "azfs"
 version = "0.1.0"
 
@@ -27,15 +34,37 @@ name = "azld"
 version = "0.1.0"
 
 [[package]]
+name = "azrt"
+version = "0.1.0"
+
+[[package]]
 name = "azsys"
 version = "0.1.0"
+
+[[package]]
+name = "cgtest"
+version = "0.1.0"
+dependencies = [
+ "azbuild",
+ "azrt",
+]
 
 [[package]]
 name = "kernel"
 version = "0.1.0"
 dependencies = [
- "azas",
+ "azbuild",
  "azfs",
  "azld",
+ "azrt",
+ "azsys",
+]
+
+[[package]]
+name = "user"
+version = "0.1.0"
+dependencies = [
+ "azbuild",
+ "azrt",
  "azsys",
 ]

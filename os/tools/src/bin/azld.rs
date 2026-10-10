@@ -111,7 +111,7 @@ fn llc(name: &str, bc: &[u8], cpu: &str, opt: &str) -> Result<Vec<u8>, String> {
     let llc = std::env::var("AZLD_LLC").map_err(|_| format!("{name}: is LLVM bitcode; set AZLD_LLC to an llc with the M68k backend"))?;
     let cache = std::env::var_os("AZLD_CACHE").map(PathBuf::from).unwrap_or_else(|| std::env::temp_dir().join("azld-cache"));
     std::fs::create_dir_all(&cache).map_err(|e| format!("{}: {e}", cache.display()))?;
-    let args = [
+    let mut args = vec![
         "-mtriple=m68k-unknown-none-elf".to_string(),
         format!("-mcpu={cpu}"),
         format!("-O{opt}"),
@@ -121,6 +121,10 @@ fn llc(name: &str, bc: &[u8], cpu: &str, opt: &str) -> Result<Vec<u8>, String> {
         "-data-sections".into(),
         "-filetype=obj".into(),
     ];
+    // debugging aid: extra llc options (e.g. -opt-bisect-limit=N)
+    if let Ok(extra) = std::env::var("AZLD_LLC_ARGS") {
+        args.extend(extra.split_whitespace().map(String::from));
+    }
     let mut h = std::collections::hash_map::DefaultHasher::new();
     bc.hash(&mut h);
     args.hash(&mut h);

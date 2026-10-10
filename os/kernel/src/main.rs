@@ -9,6 +9,7 @@
 #![no_main]
 
 extern crate alloc;
+extern crate azrt;
 
 #[macro_use]
 mod console;
@@ -96,6 +97,12 @@ pub extern "C" fn kmain(bi: &BootInfo) -> ! {
     bio::init(bi.ram_size);
     fs::init(bi.root_lba, bi.root_blocks);
     proc::start_init()
+}
+
+/// LLVM lowers traps to calls to abort().
+#[unsafe(no_mangle)]
+pub extern "C" fn abort() -> ! {
+    panic!("abort");
 }
 
 #[panic_handler]
