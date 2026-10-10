@@ -65,6 +65,59 @@
    // AddrType::ARI does not use these
    if (AM.hasIndexReg() || AM.Disp != 0) {
      LLVM_DEBUG(dbgs() << "REJECT: Cannot match Index or Disp\n");
+--- a/llvm/lib/Target/M68k/M68kISelLowering.cpp	2026-09-07 09:01:29
++++ b/llvm/lib/Target/M68k/M68kISelLowering.cpp	2026-10-09 17:25:49
+@@ -585,6 +585,12 @@
+                      *DAG.getContext());
+   CCInfo.AnalyzeCallOperands(Outs, CC_M68k);
+ 
++  // The hidden struct-return pointer is only on the stack (and popped by the
++  // callee) if the calling convention put it there; fastcc passes it in a
++  // register without the 'inreg' flag.
++  if (SR == StackStructReturn && !ArgLocs.empty() && ArgLocs[0].isRegLoc())
++    SR = RegStructReturn;
++
+   // Get a count of how many bytes are to be pushed on the stack.
+   unsigned NumBytes = CCInfo.getAlignedCallFrameSize();
+   if (IsSibcall) {
+@@ -1051,7 +1057,8 @@
+   } else {
+     MMFI->setBytesToPopOnReturn(0); // Callee pops nothing.
+     // If this is an sret function, the return should pop the hidden pointer.
+-    if (!canGuaranteeTCO(CCID) && argsAreStructReturn(Ins) == StackStructReturn)
++    if (!canGuaranteeTCO(CCID) && argsAreStructReturn(Ins) == StackStructReturn &&
++        !ArgLocs.empty() && ArgLocs[0].isMemLoc())
+       MMFI->setBytesToPopOnReturn(4);
+   }
+ 
+--- a/llvm/lib/Target/M68k/M68kInstrArithmetic.td	2026-09-07 09:01:29
++++ b/llvm/lib/Target/M68k/M68kInstrArithmetic.td	2026-10-09 21:50:31
+@@ -601,8 +601,10 @@
+       (operand "$dst", 3),
+       !if(SIGNED, 0b1, 0b0),
+       /*SIZE*/0b0, 0b0000000,
+-      // Dr REGISTER
+-      0b000)
++      // Dr REGISTER: the same as Dq, meaning "no remainder". Any other value
++      // makes the CPU write the remainder into that register behind the
++      // register allocator's back.
++      (operand "$dst", 3))
+   );
+ }
+ 
+--- a/llvm/lib/Target/M68k/M68kInstrData.td	2026-09-07 09:01:29
++++ b/llvm/lib/Target/M68k/M68kInstrData.td	2026-10-09 21:44:52
+@@ -625,7 +625,9 @@
+ 
+     def MOV#EXT#Xd16d8  : MxPseudoMove_RR<MxType16d,  MxType8d>;
+     def MOV#EXT#Xd32d8  : MxPseudoMove_RR<MxType32d,  MxType8d>;
+-    def MOV#EXT#Xd32d16 : MxPseudoMove_RR<MxType32r, MxType16r>;
++    // Data registers only: the expansion ANDs/EXTs the destination, which an
++    // address register cannot do.
++    def MOV#EXT#Xd32d16 : MxPseudoMove_RR<MxType32d, MxType16d>;
+ 
+     let mayLoad = 1 in {
+ 
 --- a/llvm/lib/Target/M68k/M68kInstrInfo.cpp	2026-09-07 09:01:29
 +++ b/llvm/lib/Target/M68k/M68kInstrInfo.cpp	2026-10-09 17:07:04
 @@ -688,6 +688,31 @@
@@ -113,28 +166,3 @@
    void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
                     const DebugLoc &DL, Register DestReg, Register SrcReg,
                     bool KillSrc, bool RenamableDest = false,
---- a/llvm/lib/Target/M68k/M68kISelLowering.cpp	2026-09-07 09:01:29
-+++ b/llvm/lib/Target/M68k/M68kISelLowering.cpp	2026-10-09 17:25:49
-@@ -585,6 +585,12 @@
-                      *DAG.getContext());
-   CCInfo.AnalyzeCallOperands(Outs, CC_M68k);
- 
-+  // The hidden struct-return pointer is only on the stack (and popped by the
-+  // callee) if the calling convention put it there; fastcc passes it in a
-+  // register without the 'inreg' flag.
-+  if (SR == StackStructReturn && !ArgLocs.empty() && ArgLocs[0].isRegLoc())
-+    SR = RegStructReturn;
-+
-   // Get a count of how many bytes are to be pushed on the stack.
-   unsigned NumBytes = CCInfo.getAlignedCallFrameSize();
-   if (IsSibcall) {
-@@ -1051,7 +1057,8 @@
-   } else {
-     MMFI->setBytesToPopOnReturn(0); // Callee pops nothing.
-     // If this is an sret function, the return should pop the hidden pointer.
--    if (!canGuaranteeTCO(CCID) && argsAreStructReturn(Ins) == StackStructReturn)
-+    if (!canGuaranteeTCO(CCID) && argsAreStructReturn(Ins) == StackStructReturn &&
-+        !ArgLocs.empty() && ArgLocs[0].isMemLoc())
-       MMFI->setBytesToPopOnReturn(4);
-   }
- 

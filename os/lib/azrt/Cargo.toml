@@ -1,0 +1,7 @@
+[package]
+name = "azrt"
+version = "0.1.0"
+edition = "2024"
+description = "Runtime support routines for Rust on the az030 that are easier to write in Rust than in assembly"
+
+[dependencies]

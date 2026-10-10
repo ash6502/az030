@@ -3,8 +3,9 @@
 ; with the MC68882. LLVM's m68k backend passes f32/f64 as integer bits: f32 in
 ; one 4-byte stack slot / d0, f64 in two slots (high first) / d0:d1.
 ;
-; Results are computed in extended precision and rounded once more to the
-; destination format.
+; Each routine first sets the FPCR rounding precision to the result format
+; (single or double, round to nearest), so results are correctly rounded IEEE
+; values rather than extended results rounded a second time.
 ;
 ; User programs only: the kernel does not save FPU state for itself.
 ;=============================================================================
@@ -23,6 +24,9 @@
 
         section .text
 
+FPCR_S  equ     $40                     ; round to single, nearest
+FPCR_D  equ     $80                     ; round to double, nearest
+
 ; return fp0 as f64 in d0:d1
 RET_D   macro
         fmove.d fp0,-(sp)
@@ -33,38 +37,46 @@ RET_D   macro
 
 ; ---- arithmetic -------------------------------------------------------------
 __addsf3:
+        fmove.l #FPCR_S,fpcr
         fmove.s 4(sp),fp0
         fadd.s  8(sp),fp0
         fmove.s fp0,d0
         rts
 __subsf3:
+        fmove.l #FPCR_S,fpcr
         fmove.s 4(sp),fp0
         fsub.s  8(sp),fp0
         fmove.s fp0,d0
         rts
 __mulsf3:
+        fmove.l #FPCR_S,fpcr
         fmove.s 4(sp),fp0
         fmul.s  8(sp),fp0
         fmove.s fp0,d0
         rts
 __divsf3:
+        fmove.l #FPCR_S,fpcr
         fmove.s 4(sp),fp0
         fdiv.s  8(sp),fp0
         fmove.s fp0,d0
         rts
 __adddf3:
+        fmove.l #FPCR_D,fpcr
         fmove.d 4(sp),fp0
         fadd.d  12(sp),fp0
         RET_D
 __subdf3:
+        fmove.l #FPCR_D,fpcr
         fmove.d 4(sp),fp0
         fsub.d  12(sp),fp0
         RET_D
 __muldf3:
+        fmove.l #FPCR_D,fpcr
         fmove.d 4(sp),fp0
         fmul.d  12(sp),fp0
         RET_D
 __divdf3:
+        fmove.l #FPCR_D,fpcr
         fmove.d 4(sp),fp0
         fdiv.d  12(sp),fp0
         RET_D

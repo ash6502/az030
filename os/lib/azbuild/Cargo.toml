@@ -1,0 +1,8 @@
+[package]
+name = "azbuild"
+version = "0.1.0"
+edition = "2024"
+description = "Helpers for build scripts of az030 OS crates: assemble .s files with azas"
+
+[dependencies]
+azas = { path = "../azas" }
