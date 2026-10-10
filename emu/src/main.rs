@@ -148,7 +148,10 @@ fn run(args: &[String]) -> Result<(), String> {
                     }
                     trace.push_back((cpu.pc, cpu.get_sr(), cpu.dar));
                 }
-                done += match cpu.step(&mut bus) {
+                // a handler that declines everything: traps take their real exceptions
+                struct NoHle;
+                impl m68k::HleHandler for NoHle {}
+                done += match cpu.step_with_hle_handler(&mut bus, &mut NoHle) {
                     m68k::StepResult::Ok { cycles } => cycles.max(1),
                     _ => 4,
                 };

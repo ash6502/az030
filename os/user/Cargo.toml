@@ -1,0 +1,18 @@
+[package]
+name = "user"
+version = "0.1.0"
+edition = "2024"
+description = "User programs for the az030 OS and their runtime library (rt)"
+
+[lib]
+name = "rt"
+path = "src/lib.rs"
+test = false
+bench = false
+
+[dependencies]
+azsys = { path = "../lib/azsys" }
+azrt = { path = "../lib/azrt" }
+
+[build-dependencies]
+azbuild = { path = "../lib/azbuild" }

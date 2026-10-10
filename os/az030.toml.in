@@ -1,0 +1,15 @@
+# Emulator configuration for the OS disk image (generated into build/ by `make run`).
+[machine]
+ram_size = "128M"
+clock_mhz = 25
+throttle = true
+
+[rom]
+file = "@ROM@"
+
+[scsi]
+enabled = true
+
+[[scsi.disk]]
+id = 0
+image = "@DISK@"
