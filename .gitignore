@@ -4,3 +4,4 @@
 emu/target
 emu/disks/*.img
 emu/vendor/*/target
+*.zip
