@@ -78,6 +78,11 @@ impl Scsi {
             if !path.exists() {
                 match d.create_size {
                     Some(size) => {
+                        if let Some(dir) = path.parent() {
+                            std::fs::create_dir_all(dir).map_err(|e| {
+                                format!("cannot create {}: {e}", dir.display())
+                            })?;
+                        }
                         let f = File::create(path)
                             .map_err(|e| format!("cannot create {}: {e}", path.display()))?;
                         f.set_len(size.0)

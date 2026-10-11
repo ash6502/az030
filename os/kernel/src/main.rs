@@ -32,7 +32,7 @@ mod vm;
 
 use core::panic::PanicInfo;
 
-pub const VERSION: &str = "0.1";
+pub const VERSION: &str = "0.2";
 
 /// Written by the bootloader (see `os/boot/boot.s`).
 #[repr(C)]

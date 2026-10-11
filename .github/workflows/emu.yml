@@ -1,0 +1,44 @@
+name: emulator
+
+on:
+  push:
+    paths: ["emu/**", "rom/boot.bin", ".github/workflows/emu.yml"]
+  pull_request:
+    paths: ["emu/**", "rom/boot.bin", ".github/workflows/emu.yml"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux-x86_64, os: ubuntu-latest, exe: az030-emu }
+          - { name: linux-aarch64, os: ubuntu-24.04-arm, exe: az030-emu }
+          - { name: windows-x86_64, os: windows-latest, exe: az030-emu.exe }
+          - { name: macos-aarch64, os: macos-latest, exe: az030-emu }
+    defaults:
+      run:
+        shell: bash
+        working-directory: emu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --locked
+
+      # Boot the ROM with piped input and make sure it reaches the monitor prompt.
+      - name: Smoke test
+        run: |
+          out=$( (sleep 2; printf ' ') | ./target/release/${{ matrix.exe }} --max-cycles 60000000 2>&1 )
+          echo "$out"
+          grep -q "Monitor ready" <<<"$out"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: az030-emu-${{ matrix.name }}
+          path: |
+            emu/target/release/${{ matrix.exe }}
+            emu/az030.toml
+            rom/boot.bin

@@ -1,0 +1,2 @@
+the version string is found in ./kernel/src/main.rs and ./root/files/etc/issue
+this is just for changing the version string for new major versions

@@ -121,7 +121,7 @@ fn run(args: &[String]) -> Result<(), String> {
         eprint!("az030: {} RAM, {} MHz. Ctrl-] q to quit, Ctrl-] r to reset.\r\n",
             human(cfg.machine.ram_size.0), cfg.machine.clock_mhz);
     }
-    let input = terminal::spawn_input();
+    let input = terminal::spawn_input(&raw);
 
     // Run in 1 ms slices of emulated time, servicing the console in between.
     let clock_hz = cfg.machine.clock_mhz * 1e6;

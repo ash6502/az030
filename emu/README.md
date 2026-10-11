@@ -13,6 +13,32 @@ cargo run --release -- --trace 200       # print the last 200 instructions (outs
 The UART connects to the terminal. **Ctrl-] q** quits, **Ctrl-] r** resets the machine, and
 **Ctrl-] Ctrl-]** sends a literal Ctrl-]. Ctrl-C goes to the guest.
 
+## Platforms
+
+The emulator builds and runs natively on macOS, Linux and Windows with a plain
+`cargo build --release`. On Windows, use Windows Terminal or a recent console host
+(Windows 10 1809 or later) so the guest's ANSI escape sequences render. The emulator
+switches the console to VT input/output and UTF-8 while it runs, then restores the
+original settings on exit.
+
+CI (`.github/workflows/emu.yml`) builds and smoke-tests all four targets: Linux x86-64,
+Linux ARM64, Windows x86-64 and macOS. It uploads ready-to-run artifacts.
+
+### Cross-compiling
+
+From any host, [cargo-zigbuild](https://github.com/rust-cross/cargo-zigbuild) with
+[Zig](https://ziglang.org) on `PATH` covers Linux and Windows without a separate C toolchain:
+
+```sh
+rustup target add x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu x86_64-pc-windows-gnu
+cargo zigbuild --release --target x86_64-unknown-linux-gnu    # Linux x86-64
+cargo zigbuild --release --target aarch64-unknown-linux-gnu   # Linux ARM64 (Raspberry Pi etc.)
+cargo zigbuild --release --target x86_64-pc-windows-gnu       # Windows x86-64 (.exe)
+```
+
+Binaries land in `target/<target>/release/`. Ship `az030.toml` and `../rom/boot.bin` with
+them, keeping the same relative layout, or edit `rom.file` in the config.
+
 ## Config (`az030.toml`)
 
 | Key                     | Meaning                                                    |
