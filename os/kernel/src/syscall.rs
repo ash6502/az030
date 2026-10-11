@@ -521,7 +521,7 @@ fn sys_uname(buf: u32) -> KResult<u32> {
     util::set_cstr(&mut u.sysname, b"az030");
     util::set_cstr(&mut u.nodename, b"az030");
     util::set_cstr(&mut u.release, crate::VERSION.as_bytes());
-    util::set_cstr(&mut u.version, b"az030 UNIX for the MC68030");
+    util::set_cstr(&mut u.version, b"AZ/UX for the MC68030");
     util::set_cstr(&mut u.machine, b"m68k");
     put(buf, &u)?;
     Ok(0)

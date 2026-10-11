@@ -11,6 +11,8 @@ SCRIPT lines:
     ! regex       fail if the output so far matches regex
     login NAME    wait for 'login: ' and send NAME
     key X         send a control key (X = C, D, Z, ...) or 'esc'
+    raw text      send text with Python escapes (\\n, \\x1b, ...) and no newline
+    sleep SECS    pause (lets a full-screen program redraw)
     # ...         comment
 
 Everything the emulator prints is copied to stdout (carriage returns removed).
@@ -114,6 +116,12 @@ def main():
             elif cmd == "login":
                 emu.wait(lambda t: t.endswith("login: "), "the login prompt")
                 emu.send(arg.encode() + b"\n")
+            elif cmd == "raw":
+                emu.send(arg.encode().decode("unicode_escape").encode("latin-1"))
+            elif cmd == "sleep":
+                end = time.time() + float(arg)
+                while time.time() < end:
+                    emu.pump(0.05)
             elif cmd == "key":
                 k = b"\x1b" if arg == "esc" else bytes([ord(arg.upper()) & 0x1F])
                 emu.send(k)

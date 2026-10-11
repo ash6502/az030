@@ -72,7 +72,7 @@ pub extern "C" fn kmain(bi: &BootInfo) -> ! {
     }
     arch::init();
     kprintln!();
-    kprintln!("az030 UNIX {} (MC68030)", VERSION);
+    kprintln!("AZ/UX {} (MC68030)", VERSION);
     mem::init(bi.ram_size);
     let cmdline = util::cstr(&bi.cmdline);
     let mut cfg = Config { boot_id: bi.boot_id, root_dev: azsys::makedev(azsys::dev::SD_MAJOR, bi.boot_id), init: "/sbin/init".into(), quiet: false };

@@ -13,6 +13,8 @@ bench = false
 [dependencies]
 azsys = { path = "../lib/azsys" }
 azrt = { path = "../lib/azrt" }
+azas = { path = "../lib/azas" }
+azld = { path = "../lib/azld" }
 
 [build-dependencies]
 azbuild = { path = "../lib/azbuild" }

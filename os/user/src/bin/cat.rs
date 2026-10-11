@@ -1,6 +1,6 @@
 //! cat: concatenate files.
 //!
-//!     cat [-nbsvE] [file...]
+//!     cat [-nbsvETA] [file...]
 
 #![no_std]
 #![no_main]
@@ -10,10 +10,10 @@ use rt::prelude::*;
 rt::main!(main);
 
 fn main(args: &[String]) -> i32 {
-    let (o, files) = rt::getopt::parse(&args[1..], "nbsvEAu", "[-nbsvE] [file...]");
+    let (o, files) = rt::getopt::parse(&args[1..], "nbsvETAu", "[-nbsvETA] [file...]");
     let (number, nonblank, squeeze) = (o.has('n'), o.has('b'), o.has('s'));
-    let (visible, ends) = (o.has('v') || o.has('A'), o.has('E') || o.has('A'));
-    let plain = !number && !nonblank && !squeeze && !visible && !ends;
+    let (visible, ends, tabs) = (o.has('v') || o.has('A'), o.has('E') || o.has('A'), o.has('T') || o.has('A'));
+    let plain = !number && !nonblank && !squeeze && !visible && !ends && !tabs;
     let mut out = rt::io::stdout();
     let mut st = 0;
     let mut lineno = 0;
@@ -75,7 +75,9 @@ fn main(args: &[String]) -> i32 {
                 o.extend_from_slice(format!("{lineno:6}\t").as_bytes());
             }
             for &b in body {
-                if visible && b != b'\t' {
+                if tabs && b == b'\t' {
+                    o.extend_from_slice(b"^I");
+                } else if visible && b != b'\t' {
                     if b >= 0x80 {
                         o.extend_from_slice(b"M-");
                     }
