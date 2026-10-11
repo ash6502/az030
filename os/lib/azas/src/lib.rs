@@ -53,6 +53,9 @@ pub struct Options {
 
 const MAX_PASSES: u32 = 40;
 
+/// The number of passes the last assembly took (for diagnostics).
+pub static PASSES: core::sync::atomic::AtomicU32 = core::sync::atomic::AtomicU32::new(0);
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum SecKind {
     Text,
@@ -145,7 +148,8 @@ pub struct Asm<'f> {
     conds: Vec<Cond>,
     ended: bool,
     /// Location of the line being assembled, for errors.
-    loc: String,
+    /// current source position: frame name and line number
+    loc: (Rc<String>, usize),
     prev_sec_sizes: Vec<(String, u32)>,
     /// Instruction sizes by position in the previous pass / this pass.
     prev_sizes: Vec<usize>,
@@ -175,7 +179,7 @@ pub fn assemble(name: &str, source: &str, opts: Options, files: &mut dyn Files) 
         stack: Vec::new(),
         conds: Vec::new(),
         ended: false,
-        loc: String::new(),
+        loc: (Rc::new(String::new()), 0),
         prev_sec_sizes: Vec::new(),
         prev_sizes: Vec::new(),
         cur_sizes: Vec::new(),
@@ -184,6 +188,7 @@ pub fn assemble(name: &str, source: &str, opts: Options, files: &mut dyn Files) 
     a.file_cache.insert(name.into(), lines);
     for pass in 1..=MAX_PASSES {
         a.run_pass(pass, name);
+        PASSES.store(pass, core::sync::atomic::Ordering::Relaxed);
         if !a.changed && pass >= 2 {
             if !a.errors.is_empty() {
                 return Err(core::mem::take(&mut a.errors));
@@ -348,9 +353,25 @@ impl<'f> Asm<'f> {
         let lines = self.file_cache.get(main).cloned().unwrap_or_default();
         self.stack.push(Frame { name: Rc::new(main.into()), lines, idx: 0, line_base: 1, kind: FrameKind::File });
         while !self.ended {
-            let Some((line, loc)) = self.next_line() else { break };
-            self.loc = loc;
-            self.line(&line);
+            let Some(f) = self.stack.last_mut() else { break };
+            if f.idx >= f.lines.len() {
+                self.stack.pop();
+                continue;
+            }
+            let i = f.idx;
+            f.idx += 1;
+            self.loc = (f.name.clone(), f.line_base + i);
+            match &f.kind {
+                FrameKind::Macro { args, size, id, params } => {
+                    let line = substitute(&f.lines[i], args, size, *id, params);
+                    self.line(&line);
+                }
+                _ => {
+                    // borrow the line through its own Rc, not through self
+                    let lines = f.lines.clone();
+                    self.line(&lines[i]);
+                }
+            }
         }
         self.stack.clear();
         if !self.conds.is_empty() {
@@ -358,28 +379,15 @@ impl<'f> Asm<'f> {
         }
     }
 
-    fn next_line(&mut self) -> Option<(String, String)> {
-        loop {
-            let f = self.stack.last_mut()?;
-            if f.idx < f.lines.len() {
-                let raw = f.lines[f.idx].clone();
-                let loc = format!("{}:{}", f.name, f.line_base + f.idx);
-                f.idx += 1;
-                let line = match &f.kind {
-                    FrameKind::Macro { args, size, id, params } => substitute(&raw, args, size, *id, params),
-                    _ => raw,
-                };
-                return Some((line, loc));
-            }
-            self.stack.pop();
-        }
-    }
-
     fn err(&mut self, msg: &str) {
-        let m = format!("{}: {}", self.loc, msg);
+        let m = format!("{}: {}", self.loc_str(), msg);
         if !self.errors.contains(&m) {
             self.errors.push(m);
         }
+    }
+
+    fn loc_str(&self) -> String {
+        format!("{}:{}", self.loc.0, self.loc.1)
     }
 
     fn active(&self) -> bool {
@@ -602,7 +610,7 @@ impl<'f> Asm<'f> {
         let line = strip_comment(raw);
         let b = line.as_bytes();
         // label
-        let mut label: Option<String> = None;
+        let mut label: Option<&str> = None;
         let mut rest = line;
         let mut i = 0;
         while i < b.len() && is_label_char(b[i]) {
@@ -610,7 +618,7 @@ impl<'f> Asm<'f> {
         }
         let starts_col0 = !b.is_empty() && !b[0].is_ascii_whitespace();
         if i > 0 && b.get(i) == Some(&b':') {
-            label = Some(line[..i].into());
+            label = Some(&line[..i]);
             rest = &line[i + 1..];
             if rest.starts_with(':') {
                 rest = &rest[1..]; // `label::` = global label
@@ -619,7 +627,7 @@ impl<'f> Asm<'f> {
                 }
             }
         } else if starts_col0 && i > 0 {
-            label = Some(line[..i].into());
+            label = Some(&line[..i]);
             rest = &line[i..];
         }
         let rest = rest.trim_start();
@@ -627,8 +635,14 @@ impl<'f> Asm<'f> {
             Some(p) => (&rest[..p], rest[p..].trim_start()),
             None => (rest, ""),
         };
-        let mnem_l = mnem.to_ascii_lowercase();
-        let (base, size) = if mnem_l.is_empty() { ("", None) } else { split_size(&mnem_l) };
+        let mnem_owned;
+        let mnem_l: &str = if mnem.bytes().any(|c| c.is_ascii_uppercase()) {
+            mnem_owned = mnem.to_ascii_lowercase();
+            &mnem_owned
+        } else {
+            mnem
+        };
+        let (base, size) = if mnem_l.is_empty() { ("", None) } else { split_size(mnem_l) };
 
         // conditionals are processed even in inactive blocks
         if self.conditional(base, size, operand_field(after)) {
@@ -649,19 +663,19 @@ impl<'f> Asm<'f> {
             }
             return;
         }
-        let ops_s = operand_field(after).to_string();
+        let ops_s = operand_field(after);
         match base {
             "equ" | "set" | "equr" | "reg" | "macro" => {
                 if base == "macro" {
                     let Some(l) = label else {
                         // `macro name[,params]`
-                        let mut parts = split_commas(&ops_s).into_iter();
+                        let mut parts = split_commas(ops_s).into_iter();
                         let name = parts.next().unwrap_or("").to_ascii_lowercase();
                         let params = parts.map(|p| p.to_string()).collect();
                         self.record_macro(&name, params);
                         return;
                     };
-                    let params = split_commas(&ops_s).into_iter().map(|p| p.to_string()).collect();
+                    let params = split_commas(ops_s).into_iter().map(|p| p.to_string()).collect();
                     self.record_macro(&l.to_ascii_lowercase(), params);
                     return;
                 }
@@ -669,15 +683,15 @@ impl<'f> Asm<'f> {
                     self.err(&format!("`{base}` needs a label"));
                     return;
                 };
-                match self.eval(&ops_s) {
-                    Ok(v) => self.define(&l, v, if base == "equ" { SymKind::Equ } else { SymKind::Set }),
+                match self.eval(ops_s) {
+                    Ok(v) => self.define(l, v, if base == "equ" { SymKind::Equ } else { SymKind::Set }),
                     Err(e) => self.err(&e),
                 }
                 return;
             }
             _ => {}
         }
-        if let Some(l) = &label {
+        if let Some(l) = label {
             if !matches!(base, "section" | "org" | "rept" | "endr") {
                 // instructions are word aligned; place the label after the padding
                 if self.secs[self.cur].kind == SecKind::Text && is_instruction(base) {
@@ -690,7 +704,7 @@ impl<'f> Asm<'f> {
         if base.is_empty() {
             return;
         }
-        if let Err(e) = self.statement(base, size, &ops_s, label.as_deref()) {
+        if let Err(e) = self.statement(base, size, ops_s, label) {
             self.err(&e);
         }
     }
@@ -821,7 +835,7 @@ impl<'f> Asm<'f> {
             let params = Rc::new(m.params.clone());
             self.macro_id += 1;
             let args = macro_args(ops);
-            let loc = self.loc.clone();
+            let loc = self.loc_str();
             if self.stack.len() > 200 {
                 return Err("macro recursion too deep".into());
             }
@@ -1014,7 +1028,7 @@ impl<'f> Asm<'f> {
                 for _ in 0..n.max(0) {
                     lines.extend(body.iter().cloned());
                 }
-                let loc = self.loc.clone();
+                let loc = self.loc_str();
                 self.stack.push(Frame { name: Rc::new(format!("{loc}: rept")), lines: Rc::new(lines), idx: 0, line_base: 1, kind: FrameKind::Rept });
                 Ok(())
             }

@@ -12,7 +12,6 @@
 
 use crate::arch;
 use crate::mem::{self, PAGE};
-use alloc::string::String;
 use alloc::vec::Vec;
 use azsys::errno::*;
 
@@ -219,18 +218,6 @@ impl AddressSpace {
         Ok(())
     }
 
-    /// Fill user memory with zeros.
-    pub fn zero(&self, va: u32, len: u32) -> KResult<()> {
-        let mut done = 0u32;
-        while done < len {
-            let a = va + done;
-            let (pa, _) = self.translate(a).ok_or(EFAULT)?;
-            let n = (PAGE - (a & (PAGE - 1))).min(len - done);
-            unsafe { core::ptr::write_bytes(pa as *mut u8, 0, n as usize) };
-            done += n;
-        }
-        Ok(())
-    }
 
     /// Is [va, va+len) mapped (and writable if `write`)?
     pub fn check(&self, va: u32, len: u32, write: bool) -> bool {
@@ -279,11 +266,6 @@ impl AddressSpace {
             }
             a += n as u32;
         }
-    }
-
-    pub fn read_string(&self, va: u32, max: usize) -> KResult<String> {
-        let v = self.read_cstr(va, max)?;
-        String::from_utf8(v).map_err(|_| EINVAL)
     }
 
     /// Grow or shrink the heap so that it ends at `new_brk`.

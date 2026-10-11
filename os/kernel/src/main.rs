@@ -55,6 +55,8 @@ pub struct Config {
     pub boot_id: u32,
     pub root_dev: u32,
     pub init: alloc::string::String,
+    /// extra words from the command line, passed to init
+    pub init_args: alloc::vec::Vec<alloc::string::String>,
     pub quiet: bool,
 }
 
@@ -75,7 +77,7 @@ pub extern "C" fn kmain(bi: &BootInfo) -> ! {
     kprintln!("AZ/UX {} (MC68030)", VERSION);
     mem::init(bi.ram_size);
     let cmdline = util::cstr(&bi.cmdline);
-    let mut cfg = Config { boot_id: bi.boot_id, root_dev: azsys::makedev(azsys::dev::SD_MAJOR, bi.boot_id), init: "/sbin/init".into(), quiet: false };
+    let mut cfg = Config { boot_id: bi.boot_id, root_dev: azsys::makedev(azsys::dev::SD_MAJOR, bi.boot_id), init: "/sbin/init".into(), init_args: alloc::vec::Vec::new(), quiet: false };
     for opt in cmdline.split_whitespace() {
         match opt.split_once('=') {
             Some(("root", v)) => {
@@ -85,6 +87,8 @@ pub extern "C" fn kmain(bi: &BootInfo) -> ! {
             }
             Some(("init", v)) => cfg.init = v.into(),
             None if opt == "quiet" => cfg.quiet = true,
+            // other words (e.g. `single`) are arguments for init
+            None => cfg.init_args.push(opt.into()),
             _ => kprintln!("kernel: ignoring option {}", opt),
         }
     }

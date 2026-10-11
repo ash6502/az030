@@ -35,7 +35,7 @@ ANSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 
 class Emu:
     def __init__(self, config, timeout):
-        self.p = subprocess.Popen([EMU, "-c", config], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.p = subprocess.Popen([EMU, "-c", config] + os.environ.get("EMUTEST_ARGS", "").split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         self.out = b""
         self.mark = 0
         self.timeout = timeout

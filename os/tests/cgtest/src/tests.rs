@@ -344,4 +344,19 @@ pub fn run(o: &mut Out) {
     let opt: Option<&str> = bb(Some("x"));
     let res: Result<u8, String> = "300".parse::<u8>().map_err(|e| e.to_string());
     out!(o, "opt {:?} {:?}", opt.map(|s| s.len()), res);
+
+    // inclusive ranges over 64-bit integers (azcc's `case a ... b` loop)
+    let (lo, hi): (i64, i64) = (bb(97), bb(97));
+    let mut n = 0;
+    let mut seen = Vec::new();
+    for x in lo..=hi {
+        n += 1;
+        seen.push(x);
+        if n > 10 {
+            break;
+        }
+    }
+    out!(o, "range_incl_i64 {} {:?}", n, seen);
+    let (lo, hi): (i64, i64) = (bb(-3), bb(4));
+    out!(o, "range_incl_i64b {} {}", (lo..=hi).count(), (lo..=hi).sum::<i64>());
 }

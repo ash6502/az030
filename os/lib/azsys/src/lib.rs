@@ -77,7 +77,9 @@ pub mod nr {
     pub const GETEGID: u32 = 64;
     pub const SETTIMEOFDAY: u32 = 65;
     pub const MOUNTINFO: u32 = 66;
-    pub const COUNT: u32 = 67;
+    /// klog(buf, len): copy the kernel message log; returns its length
+    pub const KLOG: u32 = 67;
+    pub const COUNT: u32 = 68;
 }
 
 pub mod errno {

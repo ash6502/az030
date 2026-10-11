@@ -158,6 +158,7 @@ pub fn dispatch(tf: &mut TrapFrame) {
         FTRUNCATE => fd_file(a[0]).and_then(|f| file::inode(&f).ok_or(EINVAL)).and_then(|ip| fs::truncate(&ip, a[1])).map(|_| 0),
         STATFS => path(a[0]).and_then(|p| fs::lookup(&p, true)).and_then(|ip| put(a[1], &fs::statfs(&ip)?)).map(|_| 0),
         MOUNTINFO => sys_mountinfo(a[0], a[1]),
+        KLOG => sys_klog(a[0], a[1]),
         _ => Err(ENOSYS),
     };
     tf.d[0] = match r {
@@ -600,6 +601,13 @@ fn sys_alarm(secs: u32) -> KResult<u32> {
     let left = if p.alarm_at > now { ((p.alarm_at - now) / HZ as u64) as u32 + 1 } else { 0 };
     p.alarm_at = if secs == 0 { 0 } else { now + secs as u64 * HZ as u64 };
     Ok(left)
+}
+
+fn sys_klog(buf: u32, len: u32) -> KResult<u32> {
+    let mut v = vec![0u8; (len as usize).min(crate::console::LOG_SIZE)];
+    let n = crate::console::read_log(&mut v);
+    proc::current().space().write(buf, &v[..n], false)?;
+    Ok(n as u32)
 }
 
 fn sys_mountinfo(index: u32, buf: u32) -> KResult<u32> {

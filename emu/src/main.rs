@@ -30,6 +30,7 @@ options:
                       them on exit
   --stop-at ADDR      stop when the PC reaches ADDR (hex; useful with --trace)
   --dump ADDR:LEN     hex-dump physical memory when the emulator stops
+  --profile FILE      sample the PC and write a histogram (address and count per line) to FILE
 
 console keys:
   Ctrl-] q   quit           Ctrl-] r   reset
@@ -62,6 +63,8 @@ fn run(args: &[String]) -> Result<(), String> {
     let mut max_cycles: Option<u64> = None;
     let mut trace_len = 0usize;
     let mut stop_at: Option<u32> = None;
+    let mut profile: Option<String> = None;
+    let mut samples: std::collections::HashMap<u32, u64> = Default::default();
     let mut dumps: Vec<(u32, u32)> = Vec::new();
     let mut it = args.iter();
     while let Some(a) = it.next() {
@@ -86,6 +89,9 @@ fn run(args: &[String]) -> Result<(), String> {
             }
             "--trace" => {
                 trace_len = parse_num(it.next().ok_or("--trace needs N")?)? as usize;
+            }
+            "--profile" => {
+                profile = Some(it.next().ok_or("--profile needs a file")?.clone());
             }
             "-h" | "--help" => {
                 print!("{USAGE}");
@@ -157,6 +163,14 @@ fn run(args: &[String]) -> Result<(), String> {
                 };
             }
             total_cycles += done as u64;
+        } else if profile.is_some() {
+            // execute in small steps and sample the PC after each
+            let mut done = 0i32;
+            while done < slice && !cpu.is_halted() {
+                done += cpu.execute(&mut bus, 200).max(1);
+                *samples.entry(cpu.pc).or_insert(0) += 1;
+            }
+            total_cycles += done as u64;
         } else {
             total_cycles += cpu.execute(&mut bus, slice).max(0) as u64;
         }
@@ -211,6 +225,12 @@ fn run(args: &[String]) -> Result<(), String> {
     }
     bus.flush_tx();
     drop(raw);
+    if let Some(f) = &profile {
+        let mut v: Vec<(u32, u64)> = samples.into_iter().collect();
+        v.sort_by(|a, b| b.1.cmp(&a.1));
+        let text: String = v.iter().map(|(pc, n)| format!("{pc:08x} {n}\n")).collect();
+        std::fs::write(f, text).map_err(|e| format!("{f}: {e}"))?;
+    }
     for &(addr, len) in &dumps {
         for row in (0..len).step_by(16) {
             let a = addr.wrapping_add(row) as usize;

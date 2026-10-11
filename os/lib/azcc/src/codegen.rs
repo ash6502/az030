@@ -1816,7 +1816,9 @@ impl<'u> Gen<'u> {
                     self.e("even");
                     self.lab(&tab);
                     let mut it = sorted.iter().peekable();
-                    for v in min..=max {
+                    // (an explicit offset: inclusive i64 ranges are miscompiled; see STATUS.md)
+                    for k in 0..range {
+                        let v = min + k;
                         match it.peek() {
                             Some((cv, l)) if *cv == v => {
                                 self.e(&format!("dc.l {l}"));

@@ -202,7 +202,7 @@ fn prepare_kstack(p: &mut Proc) -> *mut TrapFrame {
     let frame = tf as u32 - 48;
     unsafe {
         core::ptr::write_bytes(frame as *mut u8, 0, 48 + core::mem::size_of::<TrapFrame>());
-        *((frame + 44) as *mut u32) = arch::ret_to_user as usize as u32;
+        *((frame + 44) as *mut u32) = arch::ret_to_user as unsafe extern "C" fn() as usize as u32;
     }
     p.ksp = frame;
     tf
@@ -239,7 +239,8 @@ pub fn start_init() -> ! {
     p.files[1] = Some(con.clone());
     p.files[2] = Some(con);
     let init = crate::config().init.clone();
-    let argv = vec![init.clone().into_bytes()];
+    let mut argv = vec![init.clone().into_bytes()];
+    argv.extend(crate::config().init_args.iter().map(|a| a.clone().into_bytes()));
     let envp = vec![b"PATH=/bin:/sbin:/usr/bin".to_vec(), b"HOME=/".to_vec(), b"TERM=vt100".to_vec()];
     if let Err(e) = exec::exec(p, unsafe { &mut *tf }, &init, argv, envp) {
         panic!("cannot run {}: {}", init, message(e));

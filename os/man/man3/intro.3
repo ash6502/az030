@@ -1,0 +1,39 @@
+INTRO(3)
+
+NAME
+     intro - the AZ/UX C library
+
+DESCRIPTION
+     /usr/lib/libc.a provides the standard C library and the POSIX
+     calls a small UNIX needs. Headers are in /usr/include:
+
+     <assert.h> <ctype.h> <errno.h> <float.h> <inttypes.h> <iso646.h>
+     <limits.h> <locale.h> <math.h> <setjmp.h> <signal.h> <stdarg.h>
+     <stdbool.h> <stddef.h> <stdint.h> <stdio.h> <stdlib.h> <string.h>
+     <strings.h> <time.h> <dirent.h> <fcntl.h> <grp.h> <libgen.h>
+     <pwd.h> <termios.h> <unistd.h> <sys/ioctl.h> <sys/stat.h>
+     <sys/syscall.h> <sys/time.h> <sys/times.h> <sys/types.h>
+     <sys/utsname.h> <sys/wait.h>
+
+     Highlights
+       stdio     buffered FILE streams (line buffered on terminals),
+                 printf/scanf families with floating point, getline,
+                 popen/pclose, tmpfile
+       stdlib    malloc/calloc/realloc/free, strtol/strtod and friends,
+                 qsort, bsearch, rand, getenv/setenv, system, mkstemp,
+                 realpath, atexit
+       string    the str* and mem* functions, strtok_r, strdup,
+                 strerror, strsignal
+       math      the 68882 provides sqrt, sin, cos, tan, the inverse
+                 and hyperbolic functions, exp, log, log10, log2; pow,
+                 floor, ceil, round, fmod, frexp, ldexp, modf, hypot,
+                 cbrt and the classification macros are also available
+       unistd    the system calls, exec*, getopt, sleep/usleep
+       time      time, gmtime/localtime (UTC), mktime, strftime
+       other     setjmp/longjmp, signal/sigaction, opendir/readdir,
+                 tcgetattr/tcsetattr, getpwnam/getgrnam
+
+     Sources are in /usr/src/libc.
+
+SEE ALSO
+     cc(1), intro(2)

@@ -12,7 +12,7 @@ Claude Code was used in the creation of this
 | Glue logic in FPGA            | bus bridge, address decode, reset, UART, sysctrl    |
 | Video in FPGA                 | Address space reserved (VRAM `0xFD000000`, regs `0xFE003000`) |
 | SCSI                          | Address space reserved (`0xFE002000`)                 |
-| UNIX-like OS                  | Needs MMU → the 68030 (not 68EC030) was chosen for this |
+| UNIX-like OS                  | AZ/UX in `os/` (runs in the emulator; see `os/README.md`) |
 
 
 ## Memory map

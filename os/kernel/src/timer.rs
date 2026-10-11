@@ -53,17 +53,17 @@ pub fn present() -> bool {
     CLOCK.get().present
 }
 
-/// Level 6 interrupt.
-pub fn interrupt() {
+/// Level 6 interrupt; `from_user` says whether it interrupted user mode.
+pub fn interrupt(from_user: bool) {
     arch::wr(STATUS, 1);
     let c = CLOCK.get();
     c.ticks += 1;
     if proc::current_opt().is_some() {
         let p = proc::current();
-        if p.in_kernel {
-            p.stime += 1;
-        } else {
+        if from_user {
             p.utime += 1;
+        } else {
+            p.stime += 1;
         }
     }
     if c.slice_left > 0 {

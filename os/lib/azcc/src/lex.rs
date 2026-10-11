@@ -191,6 +191,9 @@ pub fn lex(src: &str, file: u16) -> Result<Vec<Token>, (u32, String)> {
         } else {
             let mut found = None;
             for p in PUNCTS {
+                if p.as_bytes()[0] as char != c {
+                    continue;
+                }
                 if p.chars().enumerate().all(|(k, pc)| chars.get(i + k) == Some(&pc)) {
                     found = Some(p);
                     break;

@@ -1399,12 +1399,23 @@ impl<'p, 'f> Parser<'p, 'f> {
                     let hi = if self.accept("...") { Some(self.const_expr()?) } else { None };
                     self.expect(":")?;
                     let l = self.new_label();
+                    let hi = hi.unwrap_or(v);
+                    if hi < v || hi - v > 65536 {
+                        return self.error("empty or too large case range");
+                    }
                     let Some(sw) = self.f.as_mut().unwrap().switches.last_mut() else { return self.error("case label not within a switch statement") };
-                    for x in v..=hi.unwrap_or(v) {
+                    // An explicit counter: `for x in v..=hi` over i64 is miscompiled by
+                    // the M68k back end in this function (see STATUS.md).
+                    let mut x = v;
+                    loop {
                         if sw.0.iter().any(|(c, _)| *c == x) {
                             return self.error(&format!("duplicate case value {x}"));
                         }
                         sw.0.push((x, l));
+                        if x == hi {
+                            break;
+                        }
+                        x += 1;
                     }
                     let s = if self.is("}") { Stmt::Empty } else { self.stmt()? };
                     return Ok(Stmt::Block(vec![Stmt::CaseLabel(l), s]));

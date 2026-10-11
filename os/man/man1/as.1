@@ -1,0 +1,38 @@
+AS(1)
+
+NAME
+     as - the 68030 assembler
+
+SYNOPSIS
+     as [-o out] [-f elf|bin] [-I dir] [-D name[=value]] file.s
+
+DESCRIPTION
+     as (azas) assembles Motorola-syntax 68030, 68881/68882 and 68851
+     PMMU code into an ELF object file (or a flat binary with -f bin).
+
+     Syntax
+       label:          a label (a label in column 0 needs no colon)
+       .local          a local label, scoped to the previous label
+       ; comment       also * in column 0
+       123 $7F 0x7F %1010 @17 'c'    numbers; * is the current address
+       move.l d0,(a0)+               mnemonic.size operands
+
+     Directives
+       section name   text data bss rodata   select a section
+       xdef / global  export symbols;  xref  declare imports
+       dc.b/.w/.l     data ("strings" in dc.b);  ds.b/.w/.l n  space
+       dcb.x n,v      n copies;  even  align n  cnop off,n  alignment
+       equ  set  =    symbols;  org  (binary output)
+       include "f"    incbin "f"
+       macro / endm   \1..\9 arguments, \@ unique label, narg
+       rept n / endr  repeat;  if / ifdef / ifndef / else / endif
+       end
+
+     Branches without a size are sized automatically.
+
+SYSTEM CALLS
+     trap #0 with the call number in d0 and arguments in d1-d5. See
+     intro(2) and /usr/src/examples/hello.s.
+
+SEE ALSO
+     ld(1), cc(1), intro(2)

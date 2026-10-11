@@ -1,0 +1,54 @@
+EDIT(1)
+
+NAME
+     edit - a simple screen editor
+
+SYNOPSIS
+     edit [-ilv] [-T tabsize] [+line[,column]] [file...]
+
+DESCRIPTION
+     edit is a screen editor in the style of nano. The top line shows the
+     file name and whether it has been modified; the bottom lines show a
+     status message and the main commands. Type to insert text; the
+     keys below do everything else (^ is Ctrl; M- is Esc or Alt).
+
+     Files and exit
+       ^O        write the file (asks for the name)
+       ^X        exit, asking to save changes; with several files, go to
+                 the next one
+       ^R        insert another file at the cursor
+       ^G        show the key bindings
+
+     Moving
+       arrows    ^B ^F ^P ^N        ^A Home / ^E End (Home toggles
+                                    between the indentation and column 1)
+       ^Y PgUp   ^V PgDn            ^Left ^Right   by words
+       M-\ ^Home first line         M-/ ^End       last line
+       ^_ M-G    go to line[,column]   M-]  matching bracket
+       ^C        show the cursor position
+
+     Editing
+       Backspace ^H, Del ^D   delete       Enter   new line (auto-indent
+                                           with -i or M-I)
+       ^K   cut the line (repeat to cut several) or the marked text
+       ^U   paste                          M-6  copy
+       ^^ M-A  set or clear the mark (select text with the cursor)
+       ^J   justify the paragraph (fill to 72 columns)
+       M-U  undo                           M-E  redo
+
+     Searching
+       ^W   search forward      ^Q   search backward
+       M-W  repeat the search   ^\   search and replace (Y/N/A)
+       A search is case-insensitive unless it contains capitals.
+
+     Display
+       M-N  line numbers (also -l)         ^L   redraw
+       C, assembly, shell and Rust files are syntax highlighted.
+
+OPTIONS
+     -i  auto-indent       -l  line numbers      -v  view only
+     -T  tab width (default 8)
+     +N  start at line N (and column after a comma)
+
+SEE ALSO
+     more(1)

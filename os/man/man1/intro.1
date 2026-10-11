@@ -1,0 +1,50 @@
+INTRO(1)
+
+NAME
+     intro - introduction to AZ/UX
+
+DESCRIPTION
+     AZ/UX is a small UNIX-like operating system for the az030, a 68030
+     computer with a 68882 FPU, SCSI disks and a serial console. It
+     provides processes with protected address spaces, a hierarchical
+     file system, pipes, signals, job control, users and permissions.
+
+   Logging in
+     Log in as root (no password on a fresh system) or as user. Set
+     passwords with passwd(1). The shell, sh(1), reads /etc/profile and
+     ~/.profile; type help for its built-in commands.
+
+   Finding your way around
+     ls /bin                 the programs
+     man -l                  every manual page
+     man -k word             pages about a word
+     man sh, man edit        the shell and the text editor
+
+   Files
+     /bin, /sbin             programs (/sbin: system administration)
+     /etc                    configuration: passwd, group, shadow, rc,
+                             profile, motd, issue, hostname
+     /usr/include            C header files
+     /usr/lib                libc.a and crt0.o
+     /usr/src                sources: libc and examples
+     /usr/share/man          these manual pages
+     /tmp                    temporary files (cleared at boot)
+     /home                   home directories
+     /dev                    devices: console, tty, null, zero, random,
+                             sd0-sd6 (SCSI disks)
+
+   Programming
+     cc(1) compiles C, as(1) assembles 68030 code, ld(1) links and
+     make(1) drives builds. edit(1) is a screen editor. Start with the
+     examples in /usr/src/examples:
+
+         cd /tmp
+         cc -o hello /usr/src/examples/hello.c
+         ./hello
+
+   Shutting down
+     Run halt, reboot or poweroff as root. Data is written to disk
+     every few seconds and by sync(1).
+
+SEE ALSO
+     sh(1), edit(1), cc(1), make(1), man(1), intro(2), intro(3)

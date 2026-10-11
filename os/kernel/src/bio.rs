@@ -30,24 +30,66 @@ struct Buf {
     valid: bool,
     dirty: bool,
     refs: u32,
-    used: u64,
+    /// LRU list links (indices; NIL at the ends)
+    prev: usize,
+    next: usize,
 }
+
+const NIL: usize = usize::MAX;
 
 struct Cache {
     bufs: Vec<Buf>,
     map: BTreeMap<(u32, u32), usize>,
-    clock: u64,
+    /// least and most recently used ends of the LRU list
+    lru: usize,
+    mru: usize,
     devs: BTreeMap<u32, BlockDev>,
 }
 
-static CACHE: Global<Cache> = Global::new(Cache { bufs: Vec::new(), map: BTreeMap::new(), clock: 0, devs: BTreeMap::new() });
+static CACHE: Global<Cache> = Global::new(Cache { bufs: Vec::new(), map: BTreeMap::new(), lru: NIL, mru: NIL, devs: BTreeMap::new() });
+
+impl Cache {
+    fn unlink(&mut self, i: usize) {
+        let (p, n) = (self.bufs[i].prev, self.bufs[i].next);
+        if p == NIL {
+            self.lru = n;
+        } else {
+            self.bufs[p].next = n;
+        }
+        if n == NIL {
+            self.mru = p;
+        } else {
+            self.bufs[n].prev = p;
+        }
+    }
+
+    /// Move buffer i to the most recently used end.
+    fn touch(&mut self, i: usize) {
+        if self.mru == i {
+            return;
+        }
+        self.unlink(i);
+        self.bufs[i].prev = self.mru;
+        self.bufs[i].next = NIL;
+        if self.mru != NIL {
+            let m = self.mru;
+            self.bufs[m].next = i;
+        }
+        self.mru = i;
+        if self.lru == NIL {
+            self.lru = i;
+        }
+    }
+}
 
 pub fn init(ram: u32) {
-    let n = ((ram / 128) as usize / BSIZE).clamp(128, 4096);
+    let n = ((ram / 32) as usize / BSIZE).clamp(128, 8192);
     let c = CACHE.get();
-    for _ in 0..n {
-        c.bufs.push(Buf { dev: 0, block: 0, data: Box::new([0; BSIZE]), valid: false, dirty: false, refs: 0, used: 0 });
+    for i in 0..n {
+        c.bufs.push(Buf { dev: 0, block: 0, data: Box::new([0; BSIZE]), valid: false, dirty: false, refs: 0, prev: if i == 0 { NIL } else { i - 1 }, next: if i + 1 == n { NIL } else { i + 1 } });
     }
+    c.lru = 0;
+    c.mru = n - 1;
     kprintln!("bio: {} KB buffer cache", n * BSIZE / 1024);
 }
 
@@ -105,10 +147,6 @@ impl BufRef {
         b.dirty = true;
         &mut b.data
     }
-
-    pub fn block(&self) -> u32 {
-        CACHE.get().bufs[self.idx].block
-    }
 }
 
 impl Drop for BufRef {
@@ -119,17 +157,19 @@ impl Drop for BufRef {
 
 fn slot(dev: u32, block: u32) -> KResult<usize> {
     let c = CACHE.get();
-    c.clock += 1;
     if let Some(&i) = c.map.get(&(dev, block)) {
         c.bufs[i].refs += 1;
-        c.bufs[i].used = c.clock;
+        c.touch(i);
         return Ok(i);
     }
-    // least recently used free buffer
-    let i = (0..c.bufs.len())
-        .filter(|&i| c.bufs[i].refs == 0)
-        .min_by_key(|&i| if c.bufs[i].valid { c.bufs[i].used } else { 0 })
-        .ok_or(ENOMEM)?;
+    // the least recently used buffer that nobody holds
+    let mut i = c.lru;
+    while i != NIL && c.bufs[i].refs != 0 {
+        i = c.bufs[i].next;
+    }
+    if i == NIL {
+        return Err(ENOMEM);
+    }
     let b = &mut c.bufs[i];
     if b.valid {
         if b.dirty {
@@ -145,8 +185,8 @@ fn slot(dev: u32, block: u32) -> KResult<usize> {
     b.valid = false;
     b.dirty = false;
     b.refs = 1;
-    b.used = c.clock;
     c.map.insert((dev, block), i);
+    c.touch(i);
     Ok(i)
 }
 

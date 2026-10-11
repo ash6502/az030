@@ -1,0 +1,79 @@
+SH(1)
+
+NAME
+     sh - the AZ/UX command interpreter
+
+SYNOPSIS
+     sh [-eilxfu] [-c command [arg0 [arg...]]]
+     sh [-eilxfu] script [arg...]
+
+DESCRIPTION
+     sh is a POSIX-style shell. It reads commands from a terminal (with
+     line editing), from a script or from -c. A login shell (argv[0]
+     starting with '-', or -l) first reads /etc/profile and ~/.profile.
+
+   Options
+     -c  run the command string        -e  exit when a command fails
+     -i  force interactive mode        -l  login shell
+     -x  print commands as they run    -f  disable globbing
+     -u  treat unset variables as errors (accepted)
+
+   Commands
+     A simple command is words and redirections:
+         grep -i error log.txt > found 2>&1
+     A pipeline connects commands: cmd1 | cmd2 | cmd3
+     Lists: a; b (sequence)   a & (background)   a && b   a || b
+     ! pipeline negates the status.
+
+   Compound commands
+     ( list )                       run in a subshell
+     { list; }                      group
+     if list; then list; [elif list; then list;]... [else list;] fi
+     while list; do list; done      until list; do list; done
+     for name [in word...]; do list; done
+     case word in [(]pattern[|pattern]...) list;; ... esac
+     name() compound-command        define a function
+
+   Redirections
+     < file   > file   >> file   >| file   <> file
+     n>&m   n<&m   n>&-   <<WORD (here-document)   <<-WORD (strip tabs)
+     A here-document delimiter in quotes suppresses expansion.
+
+   Expansions
+     ~ ~user                 home directories
+     $name ${name}           variables; $1..$9 ${10} positional
+     $# $@ $* $? $$ $! $- $0 special parameters
+     ${n:-w} ${n:=w} ${n:+w} ${n:?w}   defaults and checks
+     ${#n}  ${n#p} ${n##p} ${n%p} ${n%%p}   length, prefix/suffix removal
+     $(cmd)  `cmd`           command substitution
+     $((expr))               arithmetic (C operators, 64-bit)
+     * ? [abc] [a-z] [!x]    file name patterns
+     Quoting: '...' is literal; "..." allows $ and `; \ escapes one
+     character.
+
+   Built-in commands
+     : true false . source alias bg break cd command continue echo eval
+     exec exit export fg help history jobs kill local pwd read readonly
+     return set shift test [ times trap type umask unalias unset wait
+
+   Job control
+     In an interactive shell each pipeline is a job. ^Z stops the
+     foreground job; fg and bg continue it; jobs lists jobs; kill %n
+     signals one. ^C interrupts the foreground job.
+
+   Line editing
+     Left/Right, ^A ^E (start/end), ^B ^F, Up/Down or ^P ^N (history),
+     ^K ^U ^W (kill to end/start/word), ^Y (yank), ^L (clear), Tab
+     (complete commands, file names and $variables; Tab twice lists).
+     History is kept in ~/.sh_history.
+
+   Variables used by the shell
+     PATH HOME PS1 PS2 IFS PWD OLDPWD ENV. PS1 understands \u \h \w \W
+     \$ \n \e.
+
+EXIT STATUS
+     The status of the last command; 127 if a command was not found,
+     126 if it could not be run, 128+n if killed by signal n.
+
+SEE ALSO
+     intro(1), test(1), expr(1)

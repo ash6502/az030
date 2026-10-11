@@ -29,10 +29,6 @@ pub const fn align_up(v: u32, a: u32) -> u32 {
     (v + a - 1) & !(a - 1)
 }
 
-pub const fn align_down(v: u32, a: u32) -> u32 {
-    v & !(a - 1)
-}
-
 /// Copy `s` into a fixed buffer, NUL-terminated and truncated if needed.
 pub fn set_cstr(dst: &mut [u8], s: &[u8]) {
     let n = s.len().min(dst.len().saturating_sub(1));

@@ -128,6 +128,9 @@ root: user libc
 	cp -R root/files/. $(BUILD)/root/
 	cp -R libc/include/. $(BUILD)/root/usr/include/
 	cp $(LIBC)/libc.a $(LIBC)/crt0.o $(BUILD)/root/usr/lib/
+	mkdir -p $(BUILD)/root/usr/src/libc
+	cp libc/src/* $(BUILD)/root/usr/src/libc/
+	python3 tools/genman.py $(BUILD)/root/usr/share/man
 	for src in user/src/bin/*.rs user/src/bin/*/main.rs; do \
 	    p=$$(basename $$src .rs); [ $$p = main ] && p=$$(basename $$(dirname $$src)); \
 	    case " $(SBIN_PROGS) " in *" $$p "*) d=sbin;; *) d=bin;; esac; \

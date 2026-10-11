@@ -1,28 +1,31 @@
-# az030 OS: work in progress
+# AZ/UX status
 
-## Done and verified
-- `lib/azas`: 68030/68882/PMMU assembler (vasm-style syntax, binary + ELF output).
-  Assembles `rom/boot.bin` byte-for-byte; matches GNU as on a ~4000-instruction corpus
-  (`tools/astest.py`).
-- `lib/azld`: static ELF linker (archives/rlibs, GC sections, ELF exec or flat binary);
-  compiles LLVM bitcode with a patched `llc` (`tools/src/bin/azld.rs`).
-- `lib/rtasm`: asm runtime (mem*, 64-bit int helpers, FPU-backed float ABI) replacing
-  compiler_builtins, which rustc compiles with its unpatched LLVM.
-- Toolchain: local rust-src + LLVM 23.1.1 llc with M68k fixes (`toolchain/llvm-m68k-fixes.patch`):
-  1. store of an extending load folded into a full-width mem-to-mem move
-  2. frame-index + index register addressing dropped the index
-  3. register copies clobbered CCR between compare and branch
-  4. fastcc sret: callee popped a stack slot that was never pushed
-- emulator: timer/IRQ block at 0xFE004000, `--trace`, `--stop-at`, `--dump`.
-- `boot/boot.s` bootloader, `tools/src/bin/azmkdisk.rs` disk/azfs builder, `lib/azfs`, `lib/azsys`.
+## Working
+- Toolchain: rustc with a patched LLVM `llc` (`toolchain/llvm-m68k-fixes.patch`,
+  six M68k back-end fixes); `make cgtest` checks the code generator against the host.
+- Kernel: PMMU address spaces, processes, signals, sessions/job control, pipes,
+  tty with line discipline, SCSI disks, buffer cache (O(1) LRU), file system,
+  100 Hz timer, kernel log (`dmesg`).
+- Userland: `init`, `login`, `sh`, ~90 utilities, `edit`, `make`, `man`, manual
+  pages in `/usr/share/man`.
+- Native toolchain on AZ/UX: `cc` (azcc C99 compiler), `as`, `ld`, `ar`; libc with
+  stdio, stdlib, string, math (68882), time, unistd, signals, setjmp, dirent,
+  termios, pwd/grp, getopt.
+- Tests: `tests/c/run.sh` (differential C tests: host compiler vs azcc on AZ/UX),
+  `tests/os/*.t` (scripted emulator sessions), `make cgtest`.
 
-## In progress
-- One known remaining codegen bug: Grisu exact float formatting (`{:.3}`) wrong.
-  `llc -verify-machineinstrs` reports errors (illegal vregs for `MOVM16*_P` spills of DR8
-  values, allocatable live-ins, undefined physregs, `AND32di` on address registers) —
-  next lead.
-- Kernel (`kernel/`): written and type-checks, never built/run yet.
+## Known limitations
+- An M68k back-end miscompile remains: in azcc's `Parser::stmt`, a
+  `for x in a..=b` loop over i64 never terminated (worked around with an explicit
+  counter; a small reproduction in cgtest does not trigger it).
+- Compiling on AZ/UX is slow: about 15 s for a 500-line file on the emulated
+  25 MHz machine. Most of the time is the assembler's text processing, then the
+  heap and memory copies (profile with `az030-emu --profile`).
+- azcc: no complex numbers, variable-length arrays or wide-character library
+  functions; `asm()` statements take no operands. Arguments are evaluated right
+  to left.
+- One timezone (UTC); no networking; one console terminal.
+- `rm` cannot remove the current directory (the kernel refuses with EBUSY).
 
-## Not started
-- Rust userland runtime + utilities, shell, nano-like editor, C / Rust-subset compilers,
-  Makefile, disk image assembly, docs.
+## Not planned for now
+- The Rust-subset compiler (made optional).

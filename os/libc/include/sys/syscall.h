@@ -69,6 +69,7 @@
 #define SYS_getegid 64
 #define SYS_settimeofday 65
 #define SYS_mountinfo 66
+#define SYS_klog 67
 
 long __syscall(long nr, long a1, long a2, long a3, long a4, long a5);
 long syscall(long nr, ...);

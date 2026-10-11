@@ -1,0 +1,54 @@
+INTRO(2)
+
+NAME
+     intro - AZ/UX system calls
+
+DESCRIPTION
+     Programs call the kernel with trap #0: the call number in d0 and up
+     to five arguments in d1-d5. The result comes back in d0; a value
+     between -4095 and -1 is a negated error number (see <errno.h>). The
+     C library wraps each call and sets errno.
+
+     Number  Call            Number  Call
+      0      exit            34      times
+      1      fork            35      setgid
+      2      read            36      getgid
+      3      write           37      sigaction
+      4      open            38      ioctl
+      5      close           39      fcntl
+      6      waitpid         40      setpgid
+      7      link            41      umask
+      8      unlink          42      dup2
+      9      execve          43      getppid
+     10      chdir           44      setsid
+     11      time            45      getcwd
+     12      mknod           46      getdents
+     13      chmod           47      lstat
+     14      chown           48      symlink
+     15      brk             49      readlink
+     16      stat            50      sleep_ms
+     17      lseek           51      gettimeofday
+     18      getpid          52      uname
+     19      mount           53      sigreturn
+     20      umount          54      sigprocmask
+     21      setuid          55      getpgid
+     22      getuid          56      reboot
+     23      fstat           57      procinfo
+     24      pause           58      sysinfo
+     25      utime           59      alarm
+     26      access          60      ftruncate
+     27      sync            61      fsync
+     28      kill            62      statfs
+     29      rename          63      geteuid
+     30      mkdir           64      getegid
+     31      rmdir           65      settimeofday
+     32      dup             66      mountinfo
+     33      pipe
+
+     The numbers are also in <sys/syscall.h>. Programs are loaded at
+     0x40000000; the stack ends at 0x80000000 and grows on demand. At
+     entry the stack holds argc, the argv pointers, a NULL, the envp
+     pointers and a NULL.
+
+SEE ALSO
+     intro(3), as(1)

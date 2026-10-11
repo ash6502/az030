@@ -88,12 +88,6 @@ pub fn init() {
     }
 }
 
-pub fn set_session(sid: u32, pgrp: u32) {
-    let t = tty();
-    t.sid = sid;
-    t.pgrp = pgrp;
-}
-
 /// Opening the terminal makes it the controlling terminal of a session leader
 /// that has none.
 pub fn open(p: &mut Proc, minor: u32, flags: u32) -> KResult<()> {

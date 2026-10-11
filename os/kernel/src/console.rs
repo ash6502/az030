@@ -9,7 +9,7 @@ pub const UART_STATUS: u32 = 0xFE00_0004;
 pub const UART_TX_READY: u32 = 1 << 0;
 pub const UART_RX_VALID: u32 = 1 << 1;
 
-const LOG_SIZE: usize = 8192;
+pub const LOG_SIZE: usize = 8192;
 static mut LOG: [u8; LOG_SIZE] = [0; LOG_SIZE];
 static mut LOG_LEN: usize = 0;
 

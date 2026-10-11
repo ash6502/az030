@@ -1,0 +1,57 @@
+CC(1)
+
+NAME
+     cc - the C compiler
+
+SYNOPSIS
+     cc [-c | -S | -E] [-o file] [-Idir] [-Dname[=value]] [-Uname]
+        [-Ldir] [-lname] [-s] [-v] [-w] file...
+
+DESCRIPTION
+     cc compiles C programs for AZ/UX. Files ending in .c are compiled,
+     .s files are assembled, and .o and .a files are passed to the
+     linker. Unless -c, -S or -E is given, everything is linked with
+     /usr/lib/crt0.o and /usr/lib/libc.a into a.out (or -o file).
+
+     The compiler (azcc) implements most of C99: all the integer types
+     including long long, float and double (on the 68882), structures,
+     unions and bit-fields, enumerations, typedefs, function pointers,
+     variadic functions (<stdarg.h>), designated and nested
+     initializers, compound literals, static assertions, inline
+     assembly statements (asm("...") without operands) and the GNU
+     statement-expression and typeof extensions. Not supported: complex
+     numbers, variable-length arrays and wide-character library
+     functions.
+
+     Types: char 8 bits (signed), short 16, int and long 32, long long
+     64, pointers 32; float and double are IEEE single and double.
+
+OPTIONS
+     -c         compile or assemble only; write file.o
+     -S         compile only; write file.s (azas assembly)
+     -E         preprocess only, to standard output (or -o)
+     -o file    name the output
+     -I dir     search dir for #include files (before /usr/include)
+     -D n[=v]   define a macro;  -U n   undefine one
+     -L dir     search dir for libraries;  -l name   link libname.a
+     -s         strip the symbol table
+     -v         say what is being done
+     -w         suppress warnings
+     -O, -g, -W..., -f..., -m..., -std=...   accepted and ignored
+
+     Predefined macros include __STDC__, __STDC_VERSION__ (199901L),
+     __m68k__, __mc68030__, __HAVE_68881__, __AZUX__, __unix__ and
+     __azcc__.
+
+CALLING CONVENTION
+     Arguments are pushed right to left in 4-byte slots (long long and
+     double take 8); the caller removes them. Results return in d0 (and
+     a0 for pointers), d0:d1 for long long, fp0 for floating point.
+     d2-d7, a2-a6 and fp2-fp7 are preserved. C names get a leading
+     underscore in assembly (main is _main).
+
+FILES
+     /usr/include, /usr/lib/libc.a, /usr/lib/crt0.o
+
+SEE ALSO
+     as(1), ld(1), ar(1), make(1), intro(3)

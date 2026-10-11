@@ -471,11 +471,22 @@ impl Enc {
             Some(Sz::W) => Sz::W,
             Some(Sz::L) => Sz::L,
             Some(_) => return Err("bad branch size".into()),
-            None => match (disp_as(2), disp_as(4)) {
-                (Some(d), _) if fits8(d) && d != 0 && d != -1 => Sz::B,
-                (_, Some(d)) if fits16(d) => Sz::W,
-                _ => Sz::L,
-            },
+            None => {
+                let need = match (disp_as(2), disp_as(4)) {
+                    (Some(d), _) if fits8(d) && d != 0 && d != -1 => Sz::B,
+                    (_, Some(d)) if fits16(d) => Sz::W,
+                    // a label not seen yet: start optimistic, grow later if needed
+                    (None, None) if v.is_unknown() => Sz::B,
+                    _ => Sz::L,
+                };
+                // never shrink below last pass's size: the sizes only grow, so the
+                // layout converges in a few passes
+                match (self.prev_size, need) {
+                    (Some(6), _) => Sz::L,
+                    (Some(4), Sz::B) => Sz::W,
+                    _ => need,
+                }
+            }
         };
         let disp = match size {
             Sz::B => disp_as(2),

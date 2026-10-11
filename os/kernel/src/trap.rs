@@ -83,7 +83,7 @@ pub extern "C" fn trap_handler(tf: &mut TrapFrame) {
     }
     match vec {
         VEC_SYSCALL if user => syscall::dispatch(tf),
-        25..=31 => irq(vec - 24),
+        25..=31 => irq(vec - 24, user),
         VEC_SPURIOUS => {}
         VEC_BUS_ERROR if user => {
             let addr = tf.fault_address().unwrap_or(0);
@@ -106,9 +106,9 @@ pub extern "C" fn trap_handler(tf: &mut TrapFrame) {
     }
 }
 
-fn irq(level: u32) {
+fn irq(level: u32, from_user: bool) {
     match level {
-        6 => timer::interrupt(),
+        6 => timer::interrupt(from_user),
         4 => tty::interrupt(),
         _ => kprintln!("spurious interrupt, level {}", level),
     }

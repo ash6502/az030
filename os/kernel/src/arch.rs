@@ -4,9 +4,7 @@ unsafe extern "C" {
     static vector_table: [u32; 256];
     fn set_vbr(addr: u32);
     fn irq_disable() -> u32;
-    fn irq_enable();
     fn irq_restore(sr: u32);
-    fn read_sr() -> u32;
     fn cpu_idle();
     fn halt_forever() -> !;
     fn machine_restart() -> !;
@@ -42,10 +40,6 @@ pub fn init_fpu() {
     }
 }
 
-pub fn have_fpu() -> bool {
-    unsafe { HAVE_FPU }
-}
-
 /// Mask interrupts; returns the previous status register for `irq_restore`.
 #[inline]
 pub fn irq_save() -> u32 {
@@ -57,18 +51,10 @@ pub fn irq_restore_sr(sr: u32) {
     unsafe { irq_restore(sr) }
 }
 
-pub fn irq_on() {
-    unsafe { irq_enable() }
-}
-
 pub fn irq_off() {
     unsafe {
         irq_disable();
     }
-}
-
-pub fn sr() -> u32 {
-    unsafe { read_sr() }
 }
 
 /// Wait for an interrupt (with interrupts enabled), then mask them again.

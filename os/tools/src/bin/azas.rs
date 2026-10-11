@@ -67,6 +67,9 @@ fn main() -> ExitCode {
     let mut files = HostFiles { dirs };
     match azas::assemble(&input.display().to_string(), &src, azas::Options { format, defines }, &mut files) {
         Ok(bytes) => {
+            if std::env::var_os("AZAS_PASSES").is_some() {
+                eprintln!("azas: {} passes", azas::PASSES.load(std::sync::atomic::Ordering::Relaxed));
+            }
             if let Err(e) = std::fs::write(&out, bytes) {
                 eprintln!("azas: {}: {e}", out.display());
                 return ExitCode::FAILURE;
