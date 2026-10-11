@@ -15,6 +15,7 @@ azsys = { path = "../lib/azsys" }
 azrt = { path = "../lib/azrt" }
 azas = { path = "../lib/azas" }
 azld = { path = "../lib/azld" }
+azcc = { path = "../lib/azcc" }
 
 [build-dependencies]
 azbuild = { path = "../lib/azbuild" }

@@ -8,3 +8,4 @@ description = "Host-side build tools for the az030 OS: linker, assembler, compil
 azld = { path = "../lib/azld" }
 azas = { path = "../lib/azas" }
 azfs = { path = "../lib/azfs" }
+azcc = { path = "../lib/azcc" }

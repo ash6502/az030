@@ -7,6 +7,7 @@ name = "az-tools"
 version = "0.1.0"
 dependencies = [
  "azas",
+ "azcc",
  "azfs",
  "azld",
 ]
@@ -24,6 +25,10 @@ version = "0.1.0"
 dependencies = [
  "azas",
 ]
+
+[[package]]
+name = "azcc"
+version = "0.1.0"
 
 [[package]]
 name = "azfs"
@@ -66,6 +71,7 @@ version = "0.1.0"
 dependencies = [
  "azas",
  "azbuild",
+ "azcc",
  "azld",
  "azrt",
  "azsys",

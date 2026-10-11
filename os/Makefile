@@ -27,7 +27,7 @@ XCARGO  := cargo build --release --target $(TARGET) \
            -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
 XOUT    := $(OS)/target/$(TARGET)/release
 
-.PHONY: all disk toolchain tools emu cgtest kernel boot user root clean run $(BUILD)/disk.img
+.PHONY: all disk toolchain tools emu cgtest kernel boot user libc root clean run $(BUILD)/disk.img
 
 all: disk
 
@@ -85,6 +85,23 @@ boot: tools
 	mkdir -p $(BUILD)
 	$(AZAS) -f bin -o $(BUILD)/boot.bin boot/boot.s
 
+# ---- C library ---------------------------------------------------------------------------
+
+AZCC    := $(TOOLS)/azcc
+LIBC    := $(BUILD)/libc
+
+libc: tools
+	rm -rf $(LIBC)
+	mkdir -p $(LIBC)/obj
+	set -e; for f in libc/src/*.c; do \
+	    $(AZCC) -isystem libc/include -c -o $(LIBC)/obj/$$(basename $$f .c).o $$f; \
+	done
+	set -e; for f in libc/src/*.s; do \
+	    $(AZAS) -o $(LIBC)/obj/$$(basename $$f .s).o $$f; \
+	done
+	mv $(LIBC)/obj/crt0.o $(LIBC)/crt0.o
+	$(TOOLS)/azar $(LIBC)/libc.a $(LIBC)/obj/*.o
+
 # ---- disk image -------------------------------------------------------------------------
 
 DISK_SIZE ?= 64M
@@ -105,10 +122,12 @@ ALIASES := chown:chgrp readlink:realpath grep:egrep grep:fgrep test:[ od:hexdump
 user: tools
 	$(XCARGO) -p user
 
-root: user
+root: user libc
 	rm -rf $(BUILD)/root
-	mkdir -p $(BUILD)/root/bin $(BUILD)/root/sbin
+	mkdir -p $(BUILD)/root/bin $(BUILD)/root/sbin $(BUILD)/root/usr/lib $(BUILD)/root/usr/include
 	cp -R root/files/. $(BUILD)/root/
+	cp -R libc/include/. $(BUILD)/root/usr/include/
+	cp $(LIBC)/libc.a $(LIBC)/crt0.o $(BUILD)/root/usr/lib/
 	for src in user/src/bin/*.rs user/src/bin/*/main.rs; do \
 	    p=$$(basename $$src .rs); [ $$p = main ] && p=$$(basename $$(dirname $$src)); \
 	    case " $(SBIN_PROGS) " in *" $$p "*) d=sbin;; *) d=bin;; esac; \

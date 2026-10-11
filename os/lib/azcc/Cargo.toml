@@ -1,0 +1,9 @@
+[package]
+name = "azcc"
+version = "0.1.0"
+edition = "2024"
+description = "A C compiler for the 68030: preprocessor, parser and code generator emitting azas assembly"
+
+[lib]
+test = false
+bench = false
