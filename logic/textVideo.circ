@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project source="5.1.0dev" version="1.0">
+  This file is intended to be loaded by Logisim-evolution v5.1.0dev(https://github.com/logisim-evolution/).
+
+  <lib desc="#Wiring" name="0">
+    <tool name="Pin">
+      <a name="appearance" val="classic"/>
+    </tool>
+  </lib>
+  <lib desc="#Gates" name="1"/>
+  <lib desc="#Plexers" name="2"/>
+  <lib desc="#Arithmetic" name="3"/>
+  <lib desc="#FPArithmetic" name="4"/>
+  <lib desc="#Memory" name="5"/>
+  <lib desc="#I/O" name="6"/>
+  <lib desc="#TTL" name="7">
+    <tool name="74161">
+      <a name="facing" val="south"/>
+    </tool>
+  </lib>
+  <lib desc="#TCL" name="8"/>
+  <lib desc="#Base" name="9"/>
+  <lib desc="#BFH-Praktika" name="10"/>
+  <lib desc="#Input/Output-Extra" name="11"/>
+  <lib desc="#Soc" name="12"/>
+  <main name="main"/>
+  <options>
+    <a name="gateUndefined" val="ignore"/>
+    <a name="simlimit" val="1000"/>
+    <a name="simrand" val="0"/>
+  </options>
+  <mappings>
+    <tool map="Button2" name="Poke Tool"/>
+    <tool map="Button3" name="Menu Tool"/>
+    <tool map="Ctrl Button1" name="Menu Tool"/>
+  </mappings>
+  <toolbar>
+    <tool name="Poke Tool"/>
+    <tool name="Edit Tool"/>
+    <tool name="Wiring Tool"/>
+    <tool name="Text Tool"/>
+    <tool name="Image"/>
+    <sep/>
+    <tool name="Pin"/>
+    <tool name="Pin">
+      <a name="facing" val="west"/>
+      <a name="type" val="output"/>
+    </tool>
+    <sep/>
+    <tool name="NOT Gate"/>
+    <tool name="AND Gate"/>
+    <tool name="OR Gate"/>
+    <tool name="XOR Gate"/>
+    <tool name="NAND Gate"/>
+    <tool name="NOR Gate"/>
+    <sep/>
+    <tool name="D Flip-Flop"/>
+    <tool name="Register"/>
+  </toolbar>
+  <circuit name="main">
+    <a name="appearance" val="logisim_evolution"/>
+    <a name="circuit" val="main"/>
+    <a name="circuitnamedboxfixedsize" val="true"/>
+    <a name="simulationFrequency" val="1.0"/>
+    <comp lib="0" loc="(200,330)" name="Clock">
+      <a name="appearance" val="NewPins"/>
+    </comp>
+    <comp lib="7" loc="(180,480)" name="74161">
+      <a name="ShowInternalStructure" val="true"/>
+    </comp>
+    <comp loc="(660,330)" name="crtc6845"/>
+    <wire from="(200,330)" to="(440,330)"/>
+  </circuit>
+  <vhdl appearance="logisim_evolution" name="crtc6845">-- Graphics Gremlin
+--
+-- Copyright (c) 2021 Eric Schlaepfer
+-- This work is licensed under the Creative Commons Attribution-ShareAlike 4.0
+-- International License. To view a copy of this license, visit
+-- http://creativecommons.org/licenses/by-sa/4.0/ or send a letter to Creative
+-- Commons, PO Box 1866, Mountain View, CA 94042, USA.
+--
+-- VHDL translation of crtc6845.v.
+-- Note: the Verilog port "bus" is renamed "bus_in" because "bus" is a
+-- reserved word in VHDL.
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity crtc6845 is
+    generic (
+        H_TOTAL     : natural := 0;
+        H_DISP      : natural := 0;
+        H_SYNCPOS   : natural := 0;
+        H_SYNCWIDTH : natural := 0;
+        V_TOTAL     : natural := 0;
+        V_TOTALADJ  : natural := 0;
+        V_DISP      : natural := 0;
+        V_SYNCPOS   : natural := 0;
+        V_MAXSCAN   : natural := 0;
+        C_START     : natural := 0;
+        C_END       : natural := 0
+    );
+    port (
+        clk            : in  std_logic;
+        divclk         : in  std_logic;
+
+        -- ISA bus
+        cs             : in  std_logic;
+        a0             : in  std_logic;
+        write          : in  std_logic;
+        read           : in  std_logic;  -- unused, as in the original
+        bus_in         : in  std_logic_vector(7 downto 0);
+        bus_out        : out std_logic_vector(7 downto 0);
+
+        lock           : in  std_logic;
+
+        -- Video control signals
+        hsync          : out std_logic;
+        vsync          : out std_logic;
+        display_enable : out std_logic;
+        cursor         : out std_logic;
+        mem_addr       : out std_logic_vector(13 downto 0);
+        row_addr       : out std_logic_vector(4 downto 0);
+        line_reset     : out std_logic
+    );
+end entity crtc6845;
+
+architecture rtl of crtc6845 is
+
+    signal cur_addr    : unsigned(4 downto 0) := (others =&gt; '0');
+
+    -- Register file
+    signal h_total     : unsigned(7 downto 0) := to_unsigned(H_TOTAL, 8);     -- R0 97
+    signal h_disp      : unsigned(7 downto 0) := to_unsigned(H_DISP, 8);      -- R1 80
+    signal h_syncpos   : unsigned(7 downto 0) := to_unsigned(H_SYNCPOS, 8);   -- R2 82
+    signal h_syncwidth : unsigned(3 downto 0) := to_unsigned(H_SYNCWIDTH, 4); -- R3 15
+
+    signal v_total     : unsigned(6 downto 0) := to_unsigned(V_TOTAL, 7);     -- R4 25
+    signal v_totaladj  : unsigned(4 downto 0) := to_unsigned(V_TOTALADJ, 5);  -- R5 6
+    signal v_disp      : unsigned(6 downto 0) := to_unsigned(V_DISP, 7);      -- R6 25
+    signal v_syncpos   : unsigned(6 downto 0) := to_unsigned(V_SYNCPOS, 7);   -- R7 25
+    signal v_maxscan   : unsigned(4 downto 0) := to_unsigned(V_MAXSCAN, 5);   -- R9 13
+
+    signal c_start     : unsigned(6 downto 0) := to_unsigned(C_START, 7);     -- R10 11
+    signal c_end       : unsigned(4 downto 0) := to_unsigned(C_END, 5);       -- R11 12
+
+    signal start_a     : unsigned(13 downto 0) := (others =&gt; '0');            -- R12/R13
+    signal cursor_a    : unsigned(13 downto 0) := to_unsigned(92, 14);        -- R14/R15
+
+    -- Counters
+    signal h_count        : unsigned(7 downto 0) := (others =&gt; '0');
+    signal h_synccount    : unsigned(3 downto 0) := to_unsigned(1, 4); -- Must start at 1
+    signal v_scancount    : unsigned(4 downto 0) := (others =&gt; '0');
+    signal v_rowcount     : unsigned(6 downto 0) := (others =&gt; '0');
+    signal v_synccount    : unsigned(3 downto 0) := (others =&gt; '0');
+    signal cursor_counter : unsigned(4 downto 0) := (others =&gt; '0'); -- Cursor blink
+
+    signal ma_rst : unsigned(13 downto 0) := (others =&gt; '0'); -- Column reset of memory address
+
+    signal vs    : std_logic := '0';
+    signal hs    : std_logic := '0';
+    signal hdisp : std_logic := '1';
+    signal vdisp : std_logic := '1';
+
+    signal cur_on : std_logic;
+    signal blink  : std_logic;
+    signal h_end  : std_logic;
+    signal v_end  : std_logic;
+
+    signal disp_en_i  : std_logic;
+    signal mem_addr_i : unsigned(13 downto 0);
+
+begin
+
+    -- Address register
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            if a0 = '0' and write = '1' and cs = '1' then
+                cur_addr &lt;= unsigned(bus_in(4 downto 0));
+            end if;
+        end if;
+    end process;
+
+    -- Register file
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            if a0 = '1' and write = '1' and cs = '1' and
+               (lock = '0' or cur_addr &gt; 9) then
+                case to_integer(cur_addr) is
+                    when 0  =&gt; h_total     &lt;= unsigned(bus_in);
+                    when 1  =&gt; h_disp      &lt;= unsigned(bus_in);
+                    when 2  =&gt; h_syncpos   &lt;= unsigned(bus_in);
+                    when 3  =&gt; h_syncwidth &lt;= unsigned(bus_in(3 downto 0));
+                    when 4  =&gt; v_total     &lt;= unsigned(bus_in(6 downto 0));
+                    when 5  =&gt; v_totaladj  &lt;= unsigned(bus_in(4 downto 0));
+                    when 6  =&gt; v_disp      &lt;= unsigned(bus_in(6 downto 0));
+                    when 7  =&gt; v_syncpos   &lt;= unsigned(bus_in(6 downto 0));
+                    -- Register 8 not implemented
+                    when 9  =&gt; v_maxscan   &lt;= unsigned(bus_in(4 downto 0));
+                    when 10 =&gt; c_start     &lt;= unsigned(bus_in(6 downto 0));
+                    when 11 =&gt; c_end       &lt;= unsigned(bus_in(4 downto 0));
+                    when 12 =&gt; start_a(13 downto 8)  &lt;= unsigned(bus_in(5 downto 0));
+                    when 13 =&gt; start_a(7 downto 0)   &lt;= unsigned(bus_in);
+                    when 14 =&gt; cursor_a(13 downto 8) &lt;= unsigned(bus_in(5 downto 0));
+                    when 15 =&gt; cursor_a(7 downto 0)  &lt;= unsigned(bus_in);
+                    when others =&gt; null;
+                end case;
+            end if;
+        end if;
+    end process;
+
+    -- Register readback
+    -- TODO: Add light pen register (optional)
+    process (cur_addr, h_total, h_disp, h_syncpos, h_syncwidth, v_total,
+             v_totaladj, v_disp, v_syncpos, v_maxscan, c_start, c_end,
+             start_a, cursor_a)
+    begin
+        case to_integer(cur_addr) is
+            when 0  =&gt; bus_out &lt;= std_logic_vector(h_total);
+            when 1  =&gt; bus_out &lt;= std_logic_vector(h_disp);
+            when 2  =&gt; bus_out &lt;= std_logic_vector(h_syncpos);
+            when 3  =&gt; bus_out &lt;= std_logic_vector(resize(h_syncwidth, 8));
+            when 4  =&gt; bus_out &lt;= std_logic_vector(resize(v_total, 8));
+            when 5  =&gt; bus_out &lt;= std_logic_vector(resize(v_totaladj, 8));
+            when 6  =&gt; bus_out &lt;= std_logic_vector(resize(v_disp, 8));
+            when 7  =&gt; bus_out &lt;= std_logic_vector(resize(v_syncpos, 8));
+            when 8  =&gt; bus_out &lt;= x"00";
+            when 9  =&gt; bus_out &lt;= std_logic_vector(resize(v_maxscan, 8));
+            when 10 =&gt; bus_out &lt;= std_logic_vector(resize(c_start, 8));
+            when 11 =&gt; bus_out &lt;= std_logic_vector(resize(c_end, 8));
+            when 12 =&gt; bus_out &lt;= "00" &amp; std_logic_vector(start_a(13 downto 8));
+            when 13 =&gt; bus_out &lt;= std_logic_vector(start_a(7 downto 0));
+            when 14 =&gt; bus_out &lt;= "00" &amp; std_logic_vector(cursor_a(13 downto 8));
+            when 15 =&gt; bus_out &lt;= std_logic_vector(cursor_a(7 downto 0));
+            when 16 =&gt; bus_out &lt;= x"00"; -- Light pen regs
+            when 17 =&gt; bus_out &lt;= x"00";
+            when others =&gt; bus_out &lt;= x"00";
+        end case;
+    end process;
+
+    vsync          &lt;= vs;
+    hsync          &lt;= hs;
+    disp_en_i      &lt;= hdisp and vdisp;
+    display_enable &lt;= disp_en_i;
+
+    row_addr &lt;= std_logic_vector(v_scancount);
+
+    h_end      &lt;= '1' when h_count = h_total else '0';
+    line_reset &lt;= h_end;
+
+    -- Horizontal counter
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            if divclk = '1' then
+                if h_count = h_total then
+                    h_count &lt;= (others =&gt; '0');
+                    hdisp   &lt;= '1';
+                else
+                    h_count &lt;= h_count + 1;
+                    -- Blanking (compare at 9 bits, matching Verilog's
+                    -- 32-bit evaluation of h_count + 1)
+                    if resize(h_count, 9) + 1 = resize(h_disp, 9) then
+                        hdisp &lt;= '0';
+                    end if;
+                    -- Sync output
+                    if resize(h_count, 9) + 1 = resize(h_syncpos, 9) then
+                        hs &lt;= '1';
+                    end if;
+                end if;
+            end if;
+
+            -- Horizontal sync timer (later assignment to hs wins, as in Verilog)
+            if divclk = '1' and hs = '1' then
+                if h_synccount = h_syncwidth then
+                    h_synccount &lt;= to_unsigned(1, 4);
+                    hs &lt;= '0';
+                else
+                    h_synccount &lt;= h_synccount + 1;
+                end if;
+            end if;
+        end if;
+    end process;
+
+    -- v_maxscan + v_totaladj wraps at 5 bits, same as the Verilog context width
+    v_end &lt;= '1' when v_rowcount = v_total and
+                      v_scancount = v_maxscan + v_totaladj
+             else '0';
+
+    -- Vertical counter
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            if divclk = '1' and h_count = h_total then -- was h_syncpos
+
+                if v_rowcount /= v_total then
+                    -- Vertical count event
+                    if v_scancount /= v_maxscan then
+                        v_scancount &lt;= v_scancount + 1;
+                    else
+                        v_scancount &lt;= (others =&gt; '0');
+                        v_rowcount  &lt;= v_rowcount + 1;
+
+                        -- Handle vertical pulse
+                        if resize(v_rowcount, 8) + 1 = resize(v_syncpos, 8) then
+                            vs &lt;= '1';
+                        end if;
+
+                        -- Handle blanking
+                        if resize(v_rowcount, 8) + 1 = resize(v_disp, 8) then
+                            vdisp &lt;= '0';
+                        end if;
+                    end if;
+                else
+                    -- Pad with vertical adjust
+                    if v_scancount /= v_maxscan + v_totaladj then
+                        v_scancount &lt;= v_scancount + 1;
+                    else
+                        v_scancount    &lt;= (others =&gt; '0');
+                        v_rowcount     &lt;= (others =&gt; '0');
+                        vdisp          &lt;= '1';
+                        cursor_counter &lt;= cursor_counter + 1;
+                    end if;
+                end if;
+
+                -- Vertical sync pulse is fixed at 16 scan line times
+                -- Vsync pulse turns off after 16 lines
+                if vs = '1' then
+                    if v_synccount = 15 then
+                        v_synccount &lt;= (others =&gt; '0');
+                        vs &lt;= '0';
+                    else
+                        v_synccount &lt;= v_synccount + 1;
+                    end if;
+                end if;
+            end if;
+        end if;
+    end process;
+
+    -- Cursor
+    cur_on &lt;= '1' when v_scancount &gt;= c_start(4 downto 0) and
+                       v_scancount &lt;= c_end
+              else '0';
+
+    blink &lt;= '1' when c_start(6 downto 5) = "00" else
+             cursor_counter(4) when c_start(5) = '1' else
+             cursor_counter(3);
+
+    cursor &lt;= '1' when cursor_a = mem_addr_i and cur_on = '1' and
+                       blink = '1' and c_start(6 downto 5) /= "01" and
+                       disp_en_i = '1'
+              else '0';
+
+    -- Memory address generator
+    mem_addr_i &lt;= start_a + ma_rst + resize(h_count, 14);
+    mem_addr   &lt;= std_logic_vector(mem_addr_i);
+
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            if divclk = '1' and (v_end = '1' or h_end = '1') then
+                if v_end = '1' then
+                    ma_rst &lt;= (others =&gt; '0');
+                elsif v_scancount = v_maxscan then
+                    ma_rst &lt;= ma_rst + resize(h_disp, 14);
+                end if;
+            end if;
+        end if;
+    end process;
+
+end architecture rtl;</vhdl>
+</project>

@@ -3,6 +3,7 @@ mod config;
 mod scsi;
 mod terminal;
 mod timer;
+mod vera;
 
 use bus::Bus;
 use config::Config;
@@ -31,6 +32,12 @@ options:
   --stop-at ADDR      stop when the PC reaches ADDR (hex; useful with --trace)
   --dump ADDR:LEN     hex-dump physical memory when the emulator stops
   --profile FILE      sample the PC and write a histogram (address and count per line) to FILE
+  --vera              emulate the VERA video module at 0xFE003000 and show its output in a
+                      window; keys typed in the window go to the UART
+  --vera-scale N      initial window size: 1, 2 (default) or 4 times 640x480
+  --vera-snapshot FILE
+                      emulate the VERA (with or without --vera) and save its last complete
+                      frame to FILE as a PNG on exit
 
 console keys:
   Ctrl-] q   quit           Ctrl-] r   reset
@@ -66,6 +73,9 @@ fn run(args: &[String]) -> Result<(), String> {
     let mut profile: Option<String> = None;
     let mut samples: std::collections::HashMap<u32, u64> = Default::default();
     let mut dumps: Vec<(u32, u32)> = Vec::new();
+    let mut vera_window = false;
+    let mut vera_scale = 2u32;
+    let mut vera_snapshot: Option<String> = None;
     let mut it = args.iter();
     while let Some(a) = it.next() {
         match a.as_str() {
@@ -90,6 +100,13 @@ fn run(args: &[String]) -> Result<(), String> {
             "--trace" => {
                 trace_len = parse_num(it.next().ok_or("--trace needs N")?)? as usize;
             }
+            "--vera" => vera_window = true,
+            "--vera-scale" => {
+                vera_scale = parse_num(it.next().ok_or("--vera-scale needs 1, 2 or 4")?)? as u32;
+            }
+            "--vera-snapshot" => {
+                vera_snapshot = Some(it.next().ok_or("--vera-snapshot needs a file")?.clone());
+            }
             "--profile" => {
                 profile = Some(it.next().ok_or("--profile needs a file")?.clone());
             }
@@ -110,6 +127,14 @@ fn run(args: &[String]) -> Result<(), String> {
     let scsi = if cfg.scsi.enabled { Some(scsi::Scsi::new(&cfg.scsi.disks)?) } else { None };
     let timer = cfg.timer.enabled.then(timer::Timer::new);
     let mut bus = Bus::new(cfg.machine.ram_size.0 as usize, rom, cfg.machine.sysctrl_id, scsi, timer);
+
+    let cpu_hz = (cfg.machine.clock_mhz * 1e6).round() as u64;
+    if vera_window || vera_snapshot.is_some() {
+        bus.vera = Some(vera::Vera::new(cpu_hz));
+    }
+    // Open the window before the terminal goes raw, so an error prints normally.
+    let mut display = if vera_window { Some(vera::display::Display::open(vera_scale)?) } else { None };
+    let mut last_frame: Vec<u32> = Vec::new();
 
     let mut cpu = CpuCore::new();
     cpu.set_cpu_type(CpuType::M68030);
@@ -134,6 +159,8 @@ fn run(args: &[String]) -> Result<(), String> {
     let mut trace: std::collections::VecDeque<(u32, u16, [u32; 16])> = Default::default();
 
     'outer: loop {
+        let slice_start = total_cycles;
+        let mut vera_synced = false;
         if cpu.is_halted() {
             if !was_halted && verbose {
                 eprint!("\r\n[az030] CPU halted (double bus fault) at PC={:08X}\r\n", cpu.pc);
@@ -172,7 +199,26 @@ fn run(args: &[String]) -> Result<(), String> {
             }
             total_cycles += done as u64;
         } else {
-            total_cycles += cpu.execute(&mut bus, slice).max(0) as u64;
+            // With the VERA on, stop at every scanline so its interrupts and raster
+            // timing land where they would on hardware.
+            let mut done = 0i32;
+            while done < slice && !cpu.is_halted() {
+                let mut chunk = slice - done;
+                if let Some(v) = &bus.vera {
+                    chunk = chunk.min(v.cycles_to_next_line().clamp(1, i32::MAX as u64) as i32);
+                }
+                let ran = cpu.execute(&mut bus, chunk).max(1);
+                if let Some(v) = &mut bus.vera {
+                    v.advance(ran as u64);
+                    cpu.set_irq(bus.irq_level());
+                }
+                done += ran;
+            }
+            total_cycles += done as u64;
+            vera_synced = true;
+        }
+        if !vera_synced && let Some(v) = &mut bus.vera {
+            v.advance(total_cycles - slice_start);
         }
         bus.flush_tx();
 
@@ -189,9 +235,33 @@ fn run(args: &[String]) -> Result<(), String> {
         }
         bus.leds_changed = false;
 
+        // Gather input: (byte, whether Ctrl-] acts as the escape key for it).
+        let mut incoming: Vec<(u8, bool)> = Vec::new();
         while input_open {
             match input.try_recv() {
-                Ok(b) if escape => {
+                Ok(b) => incoming.push((b, raw.is_tty())),
+                Err(TryRecvError::Empty) => break,
+                Err(TryRecvError::Disconnected) => input_open = false,
+            }
+        }
+        if let Some(v) = &mut bus.vera {
+            if v.frame_ready && vera_snapshot.is_some() {
+                last_frame.clear();
+                last_frame.extend_from_slice(v.framebuffer());
+            }
+            match &mut display {
+                Some(d) => {
+                    incoming.extend(d.update(v).into_iter().map(|b| (b, true)));
+                    if !d.is_open() {
+                        break 'outer;
+                    }
+                }
+                None => v.frame_ready = false,
+            }
+        }
+        for (b, escapable) in incoming {
+            match b {
+                b if escape => {
                     escape = false;
                     match b {
                         b'q' | b'Q' => break 'outer,
@@ -205,10 +275,8 @@ fn run(args: &[String]) -> Result<(), String> {
                         _ => eprint!("\r\n[az030] Ctrl-] then: q quit, r reset\r\n"),
                     }
                 }
-                Ok(ESCAPE) if raw.is_tty() => escape = true,
-                Ok(b) => bus.uart_rx.push_back(b),
-                Err(TryRecvError::Empty) => break,
-                Err(TryRecvError::Disconnected) => input_open = false,
+                ESCAPE if escapable => escape = true,
+                b => bus.uart_rx.push_back(b),
             }
         }
 
@@ -225,6 +293,10 @@ fn run(args: &[String]) -> Result<(), String> {
     }
     bus.flush_tx();
     drop(raw);
+    if let Some(path) = &vera_snapshot {
+        let fb = if last_frame.is_empty() { bus.vera.as_ref().unwrap().framebuffer() } else { &last_frame };
+        vera::display::save_png(path, fb)?;
+    }
     if let Some(f) = &profile {
         let mut v: Vec<(u32, u64)> = samples.into_iter().collect();
         v.sort_by(|a, b| b.1.cmp(&a.1));

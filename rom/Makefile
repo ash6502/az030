@@ -12,7 +12,9 @@ boot.bin: boot.s
 boot.s37: boot.s
 	$(VASM) $(VFLAGS) -Fsrec -s37 -o $@ $<
 
-examples: examples/hello.bin
+examples: examples/hello.bin examples/vera_demo.bin
+
+examples/vera_demo.bin: examples/font.inc
 
 examples/%.bin: examples/%.s
 	$(VASM) $(VFLAGS) -Fbin -o $@ $<

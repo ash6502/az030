@@ -35,6 +35,19 @@ jobs:
           echo "$out"
           grep -q "Monitor ready" <<<"$out"
 
+      # Boot the VERA demo off a disk image, headless, and keep the frame it drew.
+      - name: VERA smoke test
+        run: |
+          ./target/release/${{ matrix.exe }} mkdisk vera.img 1M --boot ../rom/examples/vera_demo.bin --load 0x10000
+          printf '[machine]\nthrottle = false\n[rom]\nfile = "../rom/boot.bin"\n[scsi]\nenabled = true\n[[scsi.disk]]\nid = 0\nimage = "vera.img"\n' > vera.toml
+          ./target/release/${{ matrix.exe }} -c vera.toml --vera-snapshot vera.png --max-cycles 150000000 < /dev/null
+          test -s vera.png
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vera-frame-${{ matrix.name }}
+          path: emu/vera.png
+
       - uses: actions/upload-artifact@v4
         with:
           name: az030-emu-${{ matrix.name }}

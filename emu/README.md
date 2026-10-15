@@ -2,12 +2,14 @@
 
 An emulator for the az030 built on [m68k-rs](https://github.com/benletchford/m68k-rs).
 It emulates a 68030 with an FPU (68881/68882), the memory map in `../MEM_MAP.md`, the UART
-as your terminal, and an optional virtual SCSI bus.
+as your terminal, an optional virtual SCSI bus, and optionally the VERA video module in a
+window.
 
 ```sh
 cargo run --release                      # uses ./az030.toml
 cargo run --release -- -c other.toml -v  # -v reports LED changes on stderr
 cargo run --release -- --trace 200       # print the last 200 instructions (outside ROM) on exit
+cargo run --release -- --vera            # also emulate the VERA and open a window for it
 ```
 
 The UART connects to the terminal. **Ctrl-] q** quits, **Ctrl-] r** resets the machine, and
@@ -62,11 +64,69 @@ Relative paths resolve against the config file's directory.
 * **UART** at `0xFE000000`: `+0` DATA, `+4` STATUS (bit0 tx_ready, always set; bit1 rx_valid).
 * **SYSCTRL** at `0xFE001000`: `+0` BOOT, `+4` ID, `+8` LEDS.
 * **ROM** at `0xFFF00000`, mirrored across 1 MB. Writes are ignored.
+* **VERA** at `0xFE003000`, only with `--vera` or `--vera-snapshot` (see below).
 * Peripheral registers accept 32-bit accesses only. Byte/word accesses to them and all
-  accesses to unmapped space (including the reserved VRAM and video blocks) raise a bus error.
+  accesses to unmapped space (including the reserved VRAM block, and the VERA block when
+  the VERA is off) raise a bus error.
 
-Not emulated yet: the VERA/video, PS/2 keyboard, the floppy, and Ethernet. None of them
-have registers in the memory map.
+Not emulated yet: the PS/2 keyboard, the floppy, and Ethernet. None of them have
+registers in the memory map.
+
+## VERA (`0xFE003000`, opt-in)
+
+The [VERA](https://github.com/fvdhoef/vera-module) is emulated only when asked for on the
+command line, so the emulator stays a plain terminal program by default:
+
+| Option                  | Effect                                                           |
+|-------------------------|------------------------------------------------------------------|
+| `--vera`                | Emulate the VERA and show its 640x480 output in a window         |
+| `--vera-scale N`        | Initial window size, 1, 2 (default) or 4 times; it can be resized |
+| `--vera-snapshot FILE`  | Emulate the VERA (window or not) and save its last frame as a PNG on exit |
+
+Closing the window quits the emulator. The az030's PS/2 keyboard has no registers yet, so
+keys typed into the window go to the **UART**, as the bytes a VT100-style terminal sends
+(Enter = CR, Backspace = DEL, arrows = `ESC [ A`-`D`, Ctrl+letter = control codes). Ctrl-]
+works there as it does in the terminal. The UART output still goes to the terminal.
+
+**Register mapping.** VERA register `n` (0-31, as numbered in the
+[programmer's reference](https://github.com/fvdhoef/vera-module/blob/master/doc/VERA%20Programmer's%20Reference.md))
+is at `0xFE003000 + 4*n`. Like every az030 peripheral it is accessed as a long; the data is
+the low byte. So `ADDRx_L` is `0xFE003000`, `DATA0` is `0xFE00300C`, `CTRL` is
+`0xFE003014`, `DC_VIDEO` is `0xFE003024`, and so on. The VERA IRQ line is autovectored at
+**IPL 3** (vector 27), below the UART (4) and the timer tick (6). VRAM is reached only
+through the data ports, as on the real module, so the `0xFD000000` VRAM window stays
+reserved.
+
+**Emulated:** the reference v0.9 register set, with details checked against the FPGA
+sources:
+* VRAM, both data ports with every increment, DECR and read prefetch;
+* both layers in all tile and bitmap modes;
+* 128 sprites with Z-depth priority, flips, collision masks, 1024-pixel wraparound and the
+  per-line render budget;
+* the palette, border, active area and H/V scaling;
+* scanline-accurate VSYNC/LINE/SPRCOL/AFLOW interrupts and SCANLINE, and interlaced field
+  timing in the NTSC/RGB output modes (composite with chroma disabled shows in greyscale);
+* the PCM FIFO's level and drain rate.
+
+Rendering happens line by line in emulated time, so mid-frame register changes take effect
+at the right scanline.
+
+**Not emulated:**
+* Sound: the PSG and PCM accept writes but produce no audio.
+* The SD card on the SPI port: none is attached, so reads return `0xFF`.
+* NTSC colour artefacts.
+* VRAM's random power-on contents: it starts zeroed.
+* The sprite budget is an approximation of the hardware's fetch timing.
+
+**Demo:** `rom/examples/vera_demo.s` exercises text, tiles, sprites, scaling and both
+interrupts. To run it:
+
+```sh
+cargo run --release -- mkdisk disks/vera.img 1M --boot ../rom/examples/vera_demo.bin --load 0x10000
+```
+
+Then add `disks/vera.img` as a `[[scsi.disk]]` and run with `--vera`. In the demo, `z`
+toggles 2x zoom, `c` toggles composite (chroma off), and `q` returns to the monitor.
 
 ## Timer / interrupt controller (`0xFE004000`)
 

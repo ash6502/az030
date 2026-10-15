@@ -7,7 +7,7 @@
 //! | `0xFE00_0000` | UART: `+0` DATA, `+4` STATUS                                |
 //! | `0xFE00_1000` | SYSCTRL: `+0` BOOT, `+4` ID, `+8` LEDS                      |
 //! | `0xFE00_2000` | SCSI (emulator-defined, see scsi.rs)                        |
-//! | `0xFE00_3000` | Video registers (reserved -> bus error)                     |
+//! | `0xFE00_3000` | VERA registers `+4n` (n = 0-31), when enabled; see vera/   |
 //! | `0xFE00_4000` | Timer / interrupt controller (emulator-defined, see timer.rs) |
 //! | `0xFFF0_0000` | Boot ROM, mirrored across 1 MB                              |
 //!
@@ -16,6 +16,7 @@
 
 use crate::scsi::Scsi;
 use crate::timer::Timer;
+use crate::vera::Vera;
 use m68k::AddressBus;
 use m68k::core::memory::{BusFault, BusFaultKind};
 use std::collections::VecDeque;
@@ -24,6 +25,7 @@ use std::io::Write;
 const UART_BASE: u32 = 0xFE00_0000;
 const SYSCTRL_BASE: u32 = 0xFE00_1000;
 const SCSI_BASE: u32 = 0xFE00_2000;
+const VERA_BASE: u32 = 0xFE00_3000;
 const TIMER_BASE: u32 = 0xFE00_4000;
 const ROM_BASE: u32 = 0xFFF0_0000;
 
@@ -43,6 +45,8 @@ pub struct Bus {
     pub leds_changed: bool,
     pub scsi: Option<Scsi>,
     pub timer: Option<Timer>,
+    /// The VERA, when enabled from the command line (otherwise its block bus-errors).
+    pub vera: Option<Vera>,
 }
 
 fn fault(address: u32) -> BusFault {
@@ -68,6 +72,7 @@ impl Bus {
             leds_changed: false,
             scsi,
             timer,
+            vera: None,
         }
     }
 
@@ -79,11 +84,16 @@ impl Bus {
         if let Some(t) = &mut self.timer {
             t.reset();
         }
+        if let Some(v) = &mut self.vera {
+            v.reset();
+        }
     }
 
     /// Interrupt level the devices are requesting.
     pub fn irq_level(&self) -> u8 {
-        self.timer.as_ref().map_or(0, |t| t.irq_level(!self.uart_rx.is_empty()))
+        let timer = self.timer.as_ref().map_or(0, |t| t.irq_level(!self.uart_rx.is_empty()));
+        let vera = self.vera.as_ref().map_or(0, |v| if v.irq() { crate::vera::IPL } else { 0 });
+        timer.max(vera)
     }
 
     #[inline]
@@ -134,6 +144,9 @@ impl Bus {
             a if (SCSI_BASE..SCSI_BASE + 0x1000).contains(&a) => {
                 self.scsi.as_ref()?.read(a - SCSI_BASE)
             }
+            a if (VERA_BASE..VERA_BASE + 0x80).contains(&a) && a & 3 == 0 => {
+                Some(self.vera.as_mut()?.read(((a - VERA_BASE) >> 2) as u8) as u32)
+            }
             a if (TIMER_BASE..TIMER_BASE + 0x1000).contains(&a) => {
                 let rx = !self.uart_rx.is_empty();
                 self.timer.as_mut()?.read(a - TIMER_BASE, rx)
@@ -159,6 +172,9 @@ impl Bus {
                 if !scsi.write(a - SCSI_BASE, val, &mut self.ram) {
                     return None;
                 }
+            }
+            a if (VERA_BASE..VERA_BASE + 0x80).contains(&a) && a & 3 == 0 => {
+                self.vera.as_mut()?.write(((a - VERA_BASE) >> 2) as u8, val as u8);
             }
             a if (TIMER_BASE..TIMER_BASE + 0x1000).contains(&a) => {
                 self.timer.as_mut()?.write(a - TIMER_BASE, val)?;
